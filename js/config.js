@@ -21,46 +21,89 @@ if (typeof supabase !== 'undefined') {
 
 // Demo Fallback Memory Store for Static Environments (GitHub Pages / Offline)
 const MOCK_STORAGE = {
-    '/api/dashboard/monthly-summary': {
-        currentMonth: new Date().toISOString().slice(0, 7),
-        totalGrossIncome: 673441.5,
-        totalGrossExpenses: 554316.5,
-        overallNetMonthlyProfit: 119125.0,
-        modules: {
-            petrol: { revenue: 404641.5, expense: 390596.5, profit: 14045.0 },
-            shop: { revenue: 32500.0, expense: 0, profit: 32500.0 },
-            business: { revenue: 123420.0, expense: 101640.0, profit: 21780.0 },
-            agri: { revenue: 42000.0, expense: 8500.0, profit: 33500.0 },
-            home: { revenue: 85000.0, expense: 40200.0, profit: 44800.0 }
-        }
-    },
-    '/api/petrol-bunk/slips': [
-        { id: 'slip-1', customer_name: 'KSR Transports', vehicle_number: 'TN-38-AX-1020', fuel_type: 'DIESEL', qty_liters: 120.0, rate_per_liter: 92.34, is_paid: 0, slip_date: '2026-08-04' },
-        { id: 'slip-2', customer_name: 'Kongu Logistics', vehicle_number: 'TN-37-CB-5544', fuel_type: 'PETROL', qty_liters: 35.0, rate_per_liter: 100.75, is_paid: 1, slip_date: '2026-08-03' }
-    ],
-    '/api/petrol-bunk/daily-sales': [
-        { id: 'ds-1', sale_date: '2026-08-04', state_name: 'Tamil Nadu', petrol_price: 100.75, diesel_price: 92.34, petrol_liters: 1450.0, diesel_liters: 2800.0, total_revenue: 404641.5, total_profit: 14045.0 }
-    ],
-    '/api/shop-rent/tenants': [
-        { id: 't-1', tenant_name: 'Venkatesh Stores', shop_number: 'Shop G-01', aadhaar_number: '9876-5432-1098', contact_phone: '+91 9842100000', monthly_rent: 18500.0 },
-        { id: 't-2', tenant_name: 'Murugan Bakery', shop_number: 'Shop G-02', aadhaar_number: '8765-4321-0987', contact_phone: '+91 9443211111', monthly_rent: 14000.0 }
-    ],
-    '/api/shop-rent/payments': [
-        { id: 'sp-1', tenant_id: 't-1', tenant_name: 'Venkatesh Stores', shop_number: 'Shop G-01', rent_month: '2026-08', payment_date: '2026-08-01', amount_paid: 18500.0, is_paid: 1 },
-        { id: 'sp-2', tenant_id: 't-2', tenant_name: 'Murugan Bakery', shop_number: 'Shop G-02', rent_month: '2026-08', payment_date: '2026-08-02', amount_paid: 14000.0, is_paid: 1 }
-    ],
-    '/api/business/transactions': [
-        { id: 'bt-1', transaction_date: '2026-08-03', vehicle_number: 'TN-38-AX-9988', supplier_name: 'Sri Ram M-Sand Quarry', company_name: 'L&T Infrastructure Corp', empty_weight_tons: 11.20, total_weight_tons: 35.40, net_weight_tons: 24.20, buy_rate_per_ton: 4200.0, sell_rate_per_ton: 5100.0, supplier_amount: 101640.0, company_amount: 123420.0, net_profit: 21780.0, supplier_paid_status: 1, company_paid_status: 1 }
-    ],
-    '/api/agriculture/records': [
-        { id: 'ag-1', record_date: '2026-08-01', crop_type: 'COCONUT', activity_details: 'Harvest Batch #14 - 3,500 Coconuts Sold', record_type: 'INCOME', qty_units: 3500.0, amount: 42000.0 },
-        { id: 'ag-2', record_date: '2026-08-02', crop_type: 'PADDY', activity_details: 'Organic Fertilizer Purchase', record_type: 'EXPENSE', qty_units: 10.0, amount: 8500.0 }
-    ],
-    '/api/home/transactions': [
-        { id: 'hm-1', transaction_date: '2026-08-01', title: 'Monthly Salary / Personal Draw', category: 'Salary & Income', transaction_type: 'INCOME', amount: 85000.0, notes: 'Monthly household allocation' },
-        { id: 'hm-2', transaction_date: '2026-08-02', title: 'Supermarket Monthly Groceries', category: 'Groceries & Supplies', transaction_type: 'EXPENSE', amount: 14500.0, notes: 'DMart organic items' }
-    ]
+    '/api/petrol-bunk/slips': [],
+    '/api/petrol-bunk/daily-sales': [],
+    '/api/shop-rent/tenants': [],
+    '/api/shop-rent/payments': [],
+    '/api/business/transactions': [],
+    '/api/agriculture/records': [],
+    '/api/home/transactions': []
 };
+
+// Helper: Compute dynamic monthly summary from MOCK_STORAGE memory store
+function getDynamicMockMonthlySummary() {
+    const currentMonthStr = new Date().toISOString().slice(0, 7);
+
+    // 1. Petrol
+    let petrolRevenue = 0, petrolProfit = 0;
+    (MOCK_STORAGE['/api/petrol-bunk/daily-sales'] || []).forEach(s => {
+        if ((s.sale_date || '').startsWith(currentMonthStr)) {
+            petrolRevenue += (parseFloat(s.total_revenue) || 0);
+            petrolProfit += (parseFloat(s.total_profit) || 0);
+        }
+    });
+    const petrolExpenses = petrolRevenue - petrolProfit;
+
+    // 2. Shop Rent
+    let shopRentIncome = 0;
+    (MOCK_STORAGE['/api/shop-rent/payments'] || []).forEach(sp => {
+        if (sp.rent_month === currentMonthStr && sp.is_paid) {
+            shopRentIncome += (parseFloat(sp.amount_paid) || 0);
+        }
+    });
+
+    // 3. Freight Business
+    let bizRevenue = 0, bizExpenses = 0, bizProfit = 0;
+    (MOCK_STORAGE['/api/business/transactions'] || []).forEach(t => {
+        if ((t.transaction_date || '').startsWith(currentMonthStr)) {
+            if (t.company_paid_status === 1 || t.company_paid_status === true) {
+                bizRevenue += (parseFloat(t.company_amount) || 0);
+                bizExpenses += (parseFloat(t.supplier_amount) || 0);
+                bizProfit += (parseFloat(t.net_profit) || 0);
+            }
+        }
+    });
+
+    // 4. Agriculture
+    let agriRevenue = 0, agriExpenses = 0;
+    (MOCK_STORAGE['/api/agriculture/records'] || []).forEach(r => {
+        if ((r.record_date || '').startsWith(currentMonthStr)) {
+            const amt = parseFloat(r.amount) || 0;
+            if (r.record_type === 'INCOME') agriRevenue += amt;
+            else agriExpenses += amt;
+        }
+    });
+    const agriProfit = agriRevenue - agriExpenses;
+
+    // 5. Home Household
+    let homeIncome = 0, homeExpenses = 0;
+    (MOCK_STORAGE['/api/home/transactions'] || []).forEach(h => {
+        if ((h.transaction_date || '').startsWith(currentMonthStr)) {
+            const amt = parseFloat(h.amount) || 0;
+            if (h.transaction_type === 'INCOME') homeIncome += amt;
+            else homeExpenses += amt;
+        }
+    });
+    const homeSurplus = homeIncome - homeExpenses;
+
+    const totalGrossIncome = petrolRevenue + shopRentIncome + bizRevenue + agriRevenue + homeIncome;
+    const totalGrossExpenses = petrolExpenses + bizExpenses + agriExpenses + homeExpenses;
+    const overallNetMonthlyProfit = totalGrossIncome - totalGrossExpenses;
+
+    return {
+        currentMonth: currentMonthStr,
+        totalGrossIncome,
+        totalGrossExpenses,
+        overallNetMonthlyProfit,
+        modules: {
+            petrol: { revenue: petrolRevenue, expense: petrolExpenses, profit: petrolProfit },
+            shop: { revenue: shopRentIncome, expense: 0, profit: shopRentIncome },
+            business: { revenue: bizRevenue, expense: bizExpenses, profit: bizProfit },
+            agriculture: { revenue: agriRevenue, expense: agriExpenses, profit: agriProfit },
+            home: { revenue: homeIncome, expense: homeExpenses, profit: homeSurplus }
+        }
+    };
+}
 
 // Utility: Generic API Request Helper with Fallback
 async function apiFetch(endpoint, options = {}) {
@@ -77,8 +120,12 @@ async function apiFetch(endpoint, options = {}) {
         }
         return await response.json();
     } catch (err) {
-        console.warn(`API call to ${endpoint} using static fallback data...`, err);
+        console.warn(`API call to ${endpoint} using dynamic fallback data...`, err);
         const cleanEp = endpoint.split('?')[0].replace(/\/$/, '');
+
+        if (cleanEp === '/api/dashboard/monthly-summary') {
+            return getDynamicMockMonthlySummary();
+        }
         
         if (options.method === 'DELETE') {
             const id = cleanEp.split('/').pop();

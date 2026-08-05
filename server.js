@@ -44,21 +44,7 @@ function migrateTables() {
             total_profit REAL NOT NULL DEFAULT 0.0,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
-    `);
 
-    // Migrate shop_tenants if legacy layout
-    try {
-        const infoShop = db.prepare(`PRAGMA table_info(shop_tenants)`).all();
-        const hasShopNo = infoShop.some(col => col.name === 'shop_number');
-        if (infoShop.length > 0 && !hasShopNo) {
-            console.log('Migrating legacy shop_tenants table...');
-            db.exec(`DROP TABLE shop_tenants;`);
-        }
-    } catch (e) {
-        console.log('Creating fresh shop_tenants table...');
-    }
-
-    db.exec(`
         CREATE TABLE IF NOT EXISTS shop_tenants (
             id TEXT PRIMARY KEY,
             tenant_name TEXT NOT NULL,
@@ -80,21 +66,7 @@ function migrateTables() {
             is_paid INTEGER NOT NULL DEFAULT 1,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
-    `);
 
-    // Migrate business_transactions if legacy layout
-    try {
-        const info = db.prepare(`PRAGMA table_info(business_transactions)`).all();
-        const hasVehicle = info.some(col => col.name === 'vehicle_number');
-        if (info.length > 0 && !hasVehicle) {
-            console.log('Migrating legacy business_transactions table...');
-            db.exec(`DROP TABLE business_transactions;`);
-        }
-    } catch (e) {
-        console.log('Creating fresh business_transactions table...');
-    }
-
-    db.exec(`
         CREATE TABLE IF NOT EXISTS business_transactions (
             id TEXT PRIMARY KEY,
             transaction_date TEXT NOT NULL,
@@ -113,21 +85,7 @@ function migrateTables() {
             company_paid_status INTEGER NOT NULL DEFAULT 0,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
-    `);
 
-    // Migrate agriculture_records if legacy layout
-    try {
-        const infoAgri = db.prepare(`PRAGMA table_info(agriculture_records)`).all();
-        const hasRecordDate = infoAgri.some(col => col.name === 'record_date');
-        if (infoAgri.length > 0 && !hasRecordDate) {
-            console.log('Migrating legacy agriculture_records table...');
-            db.exec(`DROP TABLE agriculture_records;`);
-        }
-    } catch (e) {
-        console.log('Creating fresh agriculture_records table...');
-    }
-
-    db.exec(`
         CREATE TABLE IF NOT EXISTS agriculture_records (
             id TEXT PRIMARY KEY,
             record_date TEXT NOT NULL,
@@ -153,67 +111,6 @@ function migrateTables() {
 }
 
 migrateTables();
-
-// Seed Initial Demo Data if empty
-const countTenants = db.prepare(`SELECT COUNT(*) as count FROM shop_tenants`).get().count;
-if (countTenants === 0) {
-    db.exec(`
-        INSERT INTO shop_tenants (id, tenant_name, shop_number, aadhaar_number, contact_phone, monthly_rent) VALUES
-        ('t-1', 'Venkatesh Stores', 'Shop G-01', '9876-5432-1098', '+91 9842100000', 18500.0),
-        ('t-2', 'Murugan Bakery', 'Shop G-02', '8765-4321-0987', '+91 9443211111', 14000.0),
-        ('t-3', 'Lakshmi Mobile Care', 'Shop F-01', '7654-3210-9876', '+91 9894322222', 12500.0);
-    `);
-}
-
-const countRentPayments = db.prepare(`SELECT COUNT(*) as count FROM shop_rent_payments`).get().count;
-if (countRentPayments === 0) {
-    db.exec(`
-        INSERT INTO shop_rent_payments (id, tenant_id, tenant_name, shop_number, rent_month, payment_date, amount_paid, is_paid) VALUES
-        ('sp-1', 't-1', 'Venkatesh Stores', 'Shop G-01', '2026-08', '2026-08-01', 18500.0, 1),
-        ('sp-2', 't-2', 'Murugan Bakery', 'Shop G-02', '2026-08', '2026-08-02', 14000.0, 1),
-        ('sp-3', 't-3', 'Lakshmi Mobile Care', 'Shop F-01', '2026-08', '2026-08-05', 12500.0, 0);
-    `);
-}
-
-const countDailySales = db.prepare(`SELECT COUNT(*) as count FROM petrol_daily_sales`).get().count;
-if (countDailySales === 0) {
-    db.exec(`
-        INSERT INTO petrol_daily_sales (id, sale_date, state_name, petrol_price, diesel_price, petrol_cost, diesel_cost, petrol_liters, diesel_liters, total_revenue, total_profit) VALUES
-        ('ds-1', '2026-08-03', 'Tamil Nadu', 100.75, 92.34, 97.25, 89.14, 1450.0, 2800.0, 404641.5, 14045.0),
-        ('ds-2', '2026-08-04', 'Tamil Nadu', 100.75, 92.34, 97.25, 89.14, 1620.0, 3100.0, 449479.0, 15590.0);
-    `);
-}
-
-const countTransactions = db.prepare(`SELECT COUNT(*) as count FROM business_transactions`).get().count;
-if (countTransactions === 0) {
-    db.exec(`
-        INSERT INTO business_transactions (id, transaction_date, vehicle_number, supplier_name, company_name, empty_weight_tons, total_weight_tons, net_weight_tons, buy_rate_per_ton, sell_rate_per_ton, supplier_amount, company_amount, net_profit, supplier_paid_status, company_paid_status) VALUES
-        ('bt-1', '2026-08-03', 'TN-38-AX-9988', 'Sri Ram M-Sand Quarry', 'L&T Infrastructure Corp', 11.20, 35.40, 24.20, 4200.0, 5100.0, 101640.0, 123420.0, 21780.0, 1, 1),
-        ('bt-2', '2026-08-04', 'TN-37-BY-4411', 'Kongu Blue Metal Suppliers', 'Shree Cement Ltd', 10.50, 38.50, 28.00, 3900.0, 4850.0, 109200.0, 135800.0, 26600.0, 0, 1),
-        ('bt-3', '2026-08-05', 'TN-40-CZ-2233', 'Kaveri River Sand Co', 'Sobha Developers Ltd', 12.00, 40.00, 28.00, 4500.0, 5600.0, 126000.0, 156800.0, 30800.0, 0, 0);
-    `);
-}
-
-const countAgri = db.prepare(`SELECT COUNT(*) as count FROM agriculture_records`).get().count;
-if (countAgri === 0) {
-    db.exec(`
-        INSERT INTO agriculture_records (id, record_date, crop_type, activity_details, record_type, qty_units, amount) VALUES
-        ('ag-1', '2026-08-01', 'COCONUT', 'Harvest Batch #14 - 3,500 Coconuts Sold', 'INCOME', 3500.0, 42000.0),
-        ('ag-2', '2026-08-02', 'PADDY', 'Organic Fertilizer Purchase', 'EXPENSE', 10.0, 8500.0),
-        ('ag-3', '2026-08-03', 'PADDY', 'Paddy Grain Yield Sale (50 Bags)', 'INCOME', 50.0, 75000.0);
-    `);
-}
-
-const countHome = db.prepare(`SELECT COUNT(*) as count FROM home_transactions`).get().count;
-if (countHome === 0) {
-    db.exec(`
-        INSERT INTO home_transactions (id, transaction_date, title, category, transaction_type, amount, notes) VALUES
-        ('hm-1', '2026-08-01', 'Monthly Salary / Personal Draw', 'Salary & Income', 'INCOME', 85000.0, 'Monthly household allocation'),
-        ('hm-2', '2026-08-02', 'Supermarket Monthly Groceries', 'Groceries & Supplies', 'EXPENSE', 14500.0, 'DMart organic & household items'),
-        ('hm-3', '2026-08-03', 'TNEB Electricity Bill Payment', 'Electricity & Utilities', 'EXPENSE', 3200.0, 'Bi-monthly power bill'),
-        ('hm-4', '2026-08-04', 'Children School Fee Term #2', 'Children Education', 'EXPENSE', 22500.0, 'School tuition installment');
-    `);
-}
 
 // Indian State Fuel Price Directory
 const STATE_FUEL_PRICES = {
@@ -256,8 +153,8 @@ function getCleanId(pathname) {
     return pathname.replace(/\/$/, '').split('/').pop();
 }
 
-// HTTP Server Router
-const server = http.createServer(async (req, res) => {
+// Request Handler
+async function handleRequest(req, res) {
     if (req.method === 'OPTIONS') {
         res.writeHead(204, {
             'Access-Control-Allow-Origin': '*',
@@ -658,10 +555,11 @@ const server = http.createServer(async (req, res) => {
         console.error('Server error:', error);
         sendJson(res, { error: 'Internal Server Error', details: error.message }, 500);
     }
-});
+}
 
 function startServer(port) {
-    server.listen(port, () => {
+    const s = http.createServer(handleRequest);
+    s.listen(port, () => {
         console.log(`====================================================`);
         console.log(`🚀 ENTERPRISE BACKEND SERVER RUNNING AT:`);
         console.log(`   http://localhost:${port}`);
