@@ -676,6 +676,21 @@ body {
     text-transform: uppercase;
 }
 
+/* White Calendar Picker Icon for Dark Inputs */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(100%);
+    cursor: pointer;
+    opacity: 0.95;
+    transition: var(--transition);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="month"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
 /* Buttons */
 .btn {
     display: inline-flex;
