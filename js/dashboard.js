@@ -340,11 +340,17 @@ async function loadMasterDashboardStats() {
         const bAgri = document.getElementById('breakdownAgri');
         const bHome = document.getElementById('breakdownHome');
 
-        if (bPetrol) bPetrol.innerText = "₹ " + formatCurrency(summary.modules.petrol.profit);
-        if (bShop) bShop.innerText = "₹ " + formatCurrency(summary.modules.shop.profit);
-        if (bBusiness) bBusiness.innerText = "₹ " + formatCurrency(summary.modules.business.profit);
-        if (bAgri) bAgri.innerText = "₹ " + formatCurrency(summary.modules.agriculture.profit);
-        if (bHome) bHome.innerText = "₹ " + formatCurrency(summary.modules.home.profit);
+        const agriMod = summary.modules.agriculture || summary.modules.agri || { profit: 0 };
+        const petrolMod = summary.modules.petrol || { profit: 0 };
+        const shopMod = summary.modules.shop || { profit: 0 };
+        const bizMod = summary.modules.business || { profit: 0 };
+        const homeMod = summary.modules.home || { profit: 0 };
+
+        if (bPetrol) bPetrol.innerText = "₹ " + formatCurrency(petrolMod.profit);
+        if (bShop) bShop.innerText = "₹ " + formatCurrency(shopMod.profit);
+        if (bBusiness) bBusiness.innerText = "₹ " + formatCurrency(bizMod.profit);
+        if (bAgri) bAgri.innerText = "₹ " + formatCurrency(agriMod.profit);
+        if (bHome) bHome.innerText = "₹ " + formatCurrency(homeMod.profit);
 
     } catch (e) {
         console.warn("Dashboard: Master monthly summary fetch failed", e);
@@ -354,15 +360,17 @@ async function loadMasterDashboardStats() {
     try {
         const slips = await apiFetch('/api/petrol-bunk/slips');
         let totalUnpaid = 0;
-        slips.forEach(s => {
-            if (!s.is_paid) {
-                totalUnpaid += (parseFloat(s.qty_liters) || 0) * (parseFloat(s.rate_per_liter) || 0);
-            }
-        });
+        if (Array.isArray(slips)) {
+            slips.forEach(s => {
+                if (!s.is_paid) {
+                    totalUnpaid += (parseFloat(s.qty_liters) || 0) * (parseFloat(s.rate_per_liter) || 0);
+                }
+            });
+        }
         const petrolKpi = document.getElementById('dashPetrolKpi');
         const petrolSub = document.getElementById('dashPetrolSub');
         if (petrolKpi) petrolKpi.innerText = "₹ " + formatCurrency(totalUnpaid);
-        if (petrolSub) petrolSub.innerText = `Unpaid Credit (${slips.length} Slips)`;
+        if (petrolSub) petrolSub.innerText = `Unpaid Credit (${Array.isArray(slips) ? slips.length : 0} Slips)`;
     } catch (e) {
         console.warn("Dashboard: Petrol stats fetch failed", e);
     }
@@ -371,11 +379,13 @@ async function loadMasterDashboardStats() {
     try {
         const tenants = await apiFetch('/api/shop-rent/tenants');
         let totalRent = 0;
-        tenants.forEach(t => totalRent += (parseFloat(t.monthly_rent) || 0));
+        if (Array.isArray(tenants)) {
+            tenants.forEach(t => totalRent += (parseFloat(t.monthly_rent) || 0));
+        }
         const shopKpi = document.getElementById('dashShopKpi');
         const shopSub = document.getElementById('dashShopSub');
         if (shopKpi) shopKpi.innerText = "₹ " + formatCurrency(totalRent);
-        if (shopSub) shopSub.innerText = `Monthly Rent (${tenants.length} Tenants)`;
+        if (shopSub) shopSub.innerText = `Monthly Rent (${Array.isArray(tenants) ? tenants.length : 0} Tenants)`;
     } catch (e) {
         console.warn("Dashboard: Shop Rent stats fetch failed", e);
     }
@@ -384,14 +394,20 @@ async function loadMasterDashboardStats() {
     try {
         const txs = await apiFetch('/api/business/transactions');
         let profit = 0;
-        txs.forEach(t => profit += (parseFloat(t.net_profit) || 0));
+        if (Array.isArray(txs)) {
+            txs.forEach(t => {
+                if (t.company_paid_status === 1) {
+                    profit += (parseFloat(t.net_profit) || 0);
+                }
+            });
+        }
         const bizKpi = document.getElementById('dashBusinessKpi');
         const bizSub = document.getElementById('dashBusinessSub');
         if (bizKpi) {
             bizKpi.innerText = "₹ " + formatCurrency(profit);
             bizKpi.style.color = profit >= 0 ? 'var(--status-success)' : 'var(--status-danger)';
         }
-        if (bizSub) bizSub.innerText = `Trade Profit (${txs.length} Trips)`;
+        if (bizSub) bizSub.innerText = `Trade Profit (${Array.isArray(txs) ? txs.length : 0} Trips)`;
     } catch (e) {
         console.warn("Dashboard: Business stats fetch failed", e);
     }
@@ -400,13 +416,15 @@ async function loadMasterDashboardStats() {
     try {
         const records = await apiFetch('/api/agriculture/records');
         let rev = 0;
-        records.forEach(r => {
-            if (r.record_type === 'INCOME') rev += (parseFloat(r.amount) || 0);
-        });
+        if (Array.isArray(records)) {
+            records.forEach(r => {
+                if (r.record_type === 'INCOME') rev += (parseFloat(r.amount) || 0);
+            });
+        }
         const agriKpi = document.getElementById('dashAgriKpi');
         const agriSub = document.getElementById('dashAgriSub');
         if (agriKpi) agriKpi.innerText = "₹ " + formatCurrency(rev);
-        if (agriSub) agriSub.innerText = `Harvest Sales (${records.length} Logs)`;
+        if (agriSub) agriSub.innerText = `Harvest Sales (${Array.isArray(records) ? records.length : 0} Logs)`;
     } catch (e) {
         console.warn("Dashboard: Agriculture stats fetch failed", e);
     }
@@ -415,16 +433,18 @@ async function loadMasterDashboardStats() {
     try {
         const homeTx = await apiFetch('/api/home/transactions');
         let income = 0, exp = 0;
-        homeTx.forEach(h => {
-            const amt = parseFloat(h.amount) || 0;
-            if (h.transaction_type === 'INCOME') income += amt;
-            else exp += amt;
-        });
+        if (Array.isArray(homeTx)) {
+            homeTx.forEach(h => {
+                const amt = parseFloat(h.amount) || 0;
+                if (h.transaction_type === 'INCOME') income += amt;
+                else exp += amt;
+            });
+        }
         const surplus = income - exp;
         const homeKpi = document.getElementById('dashHomeKpi');
         const homeSub = document.getElementById('dashHomeSub');
         if (homeKpi) homeKpi.innerText = "₹ " + formatCurrency(surplus);
-        if (homeSub) homeSub.innerText = `Family Surplus (${homeTx.length} Items)`;
+        if (homeSub) homeSub.innerText = `Family Surplus (${Array.isArray(homeTx) ? homeTx.length : 0} Items)`;
     } catch (e) {
         console.warn("Dashboard: Home stats fetch failed", e);
     }
