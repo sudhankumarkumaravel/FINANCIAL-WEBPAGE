@@ -7,6 +7,9 @@
     <title>Business Cashflow | Enterprise Management System</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- jsPDF & AutoTable for Client-Side PDF Report Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body id="businessPage">
 
@@ -23,6 +26,7 @@
                 <li><a href="shop-rent.html">🏬 Shop Rent</a></li>
                 <li><a href="business.html" class="active">💼 Business Ledger</a></li>
                 <li><a href="agriculture.html">🌾 Agriculture</a></li>
+                <li><a href="home.html">🏡 Home / Family</a></li>
             </ul>
 
             <div class="sidebar-footer">
@@ -178,11 +182,14 @@
                     </form>
                 </div>
 
-                <!-- WEIGHBRIDGE FREIGHT TRADES LEDGER TABLE -->
+                <!-- WEIGHBRIDGE FREIGHT TRADES LEDGER TABLE WITH EXPORT PDF -->
                 <div class="card">
                     <h2 class="card-header">
                         <span>📜 Weighbridge Freight Trade Ledger</span>
-                        <button class="btn btn-secondary" onclick="loadBusinessTradesLedger()">🔄 Refresh Ledger</button>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-accent" onclick="openExportPdfModal()">📄 Export PDF Report</button>
+                            <button class="btn btn-secondary" onclick="loadBusinessTradesLedger()">🔄 Refresh Ledger</button>
+                        </div>
                     </h2>
 
                     <div class="table-wrap">
@@ -191,19 +198,20 @@
                                 <tr>
                                     <th>Date</th>
                                     <th>Vehicle No.</th>
-                                    <th>Supplier (Payment)</th>
-                                    <th>Company (Receipt)</th>
+                                    <th>Supplier Name</th>
+                                    <th>Company Name</th>
                                     <th>Net Weight</th>
-                                    <th>Buy / Sell Rate</th>
-                                    <th>Amount to Supplier</th>
-                                    <th>Amount from Company</th>
+                                    <th>Supplier Amt</th>
+                                    <th>Company Amt</th>
                                     <th>Net Profit</th>
+                                    <th>Supplier Status</th>
+                                    <th>Company Status</th>
                                     <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="businessTradesTableBody">
                                 <tr>
-                                    <td colspan="10" class="text-center" style="padding: 24px; color: #94a3b8;">Loading weighbridge trades...</td>
+                                    <td colspan="11" class="text-center" style="padding: 24px; color: #94a3b8;">Loading weighbridge trades...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -212,6 +220,48 @@
 
             </div>
         </main>
+    </div>
+
+    <!-- EXPORT PDF MODAL -->
+    <div id="exportPdfModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📄 Export Business Freight PDF Report</h3>
+                <button class="modal-close" onclick="closeExportPdfModal()">&times;</button>
+            </div>
+            
+            <form onsubmit="handlePdfExportSubmit(event)">
+                <div class="form-group">
+                    <label for="pdfFilterTypeSelect">Select Export Period Duration</label>
+                    <select id="pdfFilterTypeSelect" class="form-control" onchange="onPdfFilterTypeChange()" required>
+                        <option value="month">Specific Month (e.g. Current Month / Chosen Month)</option>
+                        <option value="year">Whole Year (e.g. 2026 Annual Report)</option>
+                        <option value="all">Complete Full Ledger (All Time History)</option>
+                    </select>
+                </div>
+
+                <!-- Specific Month Selector -->
+                <div class="form-group" id="pdfMonthContainer">
+                    <label for="pdfMonthInput">Select Month</label>
+                    <input type="month" id="pdfMonthInput" class="form-control">
+                </div>
+
+                <!-- Whole Year Selector -->
+                <div class="form-group" id="pdfYearContainer" style="display: none;">
+                    <label for="pdfYearSelect">Select Year</label>
+                    <select id="pdfYearSelect" class="form-control">
+                        <option value="2026">Year 2026</option>
+                        <option value="2025">Year 2025</option>
+                        <option value="2027">Year 2027</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="btn btn-secondary btn-block" onclick="closeExportPdfModal()">Cancel</button>
+                    <button type="submit" class="btn btn-accent btn-block">📥 Download PDF Report</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="js/config.js"></script>
