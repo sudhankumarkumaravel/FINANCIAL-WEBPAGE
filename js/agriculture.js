@@ -36,7 +36,7 @@ async function fetchAgriRecords() {
             const { data, error } = await supabaseClient
                 .from('agriculture_records')
                 .select('*')
-                .order('activity_date', { ascending: false });
+                .order('record_date', { ascending: false });
 
             if (!error && data && data.length > 0) {
                 agriRecords = data;
@@ -104,9 +104,9 @@ function renderAgriDashboard() {
 }
 
 function updateAgriKPIs(revenue, expense, yieldCount) {
-    const kpiRev = document.getElementById('agriTotalRevenue');
-    const kpiExp = document.getElementById('agriTotalExpense');
-    const kpiNet = document.getElementById('agriNetProfit');
+    const kpiRev = document.getElementById('kpiAgriRevenue') || document.getElementById('agriTotalRevenue');
+    const kpiExp = document.getElementById('kpiAgriExpense') || document.getElementById('agriTotalExpense');
+    const kpiNet = document.getElementById('kpiAgriNet') || document.getElementById('agriNetProfit');
     const kpiYield = document.getElementById('agriTotalYield');
 
     const netProfit = revenue - expense;
