@@ -19,21 +19,103 @@ if (typeof supabase !== 'undefined') {
     }
 }
 
-// Persistent Offline Mock Database for Static Environments (GitHub Pages)
-const SAVED_STATIC_DB = localStorage.getItem('ENTERPRISE_STATIC_DB');
-const MOCK_STORAGE = SAVED_STATIC_DB ? JSON.parse(SAVED_STATIC_DB) : {
+// Initial Seed Data for Static / GitHub Pages Deployment
+const DEFAULT_SEED_DATA = {
     '/api/petrol-bunk/slips': [],
     '/api/petrol-bunk/daily-sales': [],
     '/api/shop-rent/tenants': [],
     '/api/shop-rent/payments': [],
-    '/api/business/transactions': [],
-    '/api/agriculture/records': [],
-    '/api/home/transactions': []
+    '/api/business/transactions': [
+        {
+            id: 'bt-seed-1',
+            transaction_date: '2026-08-05',
+            vehicle_number: 'TN 37 AB 1234',
+            supplier_name: 'Coimbatore Traders',
+            company_name: 'Jindal Steel',
+            empty_weight_tons: 10.0,
+            total_weight_tons: 35.0,
+            net_weight_tons: 25.0,
+            buy_rate_per_ton: 4000.00,
+            sell_rate_per_ton: 5436.86,
+            supplier_amount: 100000.00,
+            company_amount: 135921.50,
+            net_profit: 35921.50,
+            supplier_paid_status: 1,
+            company_paid_status: 1
+        }
+    ],
+    '/api/agriculture/records': [
+        {
+            id: 'ag-seed-1',
+            record_date: '2026-07-23',
+            crop_type: 'coconut',
+            activity_details: 'fertilizer',
+            record_type: 'EXPENSE',
+            qty_units: 0,
+            amount: 13550
+        },
+        {
+            id: 'ag-seed-2',
+            record_date: '2026-06-02',
+            crop_type: 'coconut',
+            activity_details: 'thenamaram pathi',
+            record_type: 'EXPENSE',
+            qty_units: 0,
+            amount: 6000
+        },
+        {
+            id: 'ag-seed-3',
+            record_date: '2026-05-28',
+            crop_type: 'Kambu',
+            activity_details: 'tractor',
+            record_type: 'EXPENSE',
+            qty_units: 0,
+            amount: 13260
+        }
+    ],
+    '/api/home/transactions': [
+        {
+            id: 'hm-seed-1',
+            transaction_date: '2026-08-05',
+            title: 'Monthly Living & Groceries',
+            category: 'Groceries',
+            transaction_type: 'EXPENSE',
+            amount: 3000,
+            notes: 'Household Expense'
+        }
+    ]
 };
+
+// Load or Initialize Persistent Mock Database
+function initMockStorage() {
+    const raw = localStorage.getItem('ENTERPRISE_STATIC_DB_V2');
+    if (!raw) {
+        localStorage.setItem('ENTERPRISE_STATIC_DB_V2', JSON.stringify(DEFAULT_SEED_DATA));
+        return JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        // If agriculture records are empty in old cache, merge default seed records
+        if (!parsed['/api/agriculture/records'] || parsed['/api/agriculture/records'].length === 0) {
+            parsed['/api/agriculture/records'] = DEFAULT_SEED_DATA['/api/agriculture/records'];
+        }
+        if (!parsed['/api/business/transactions'] || parsed['/api/business/transactions'].length === 0) {
+            parsed['/api/business/transactions'] = DEFAULT_SEED_DATA['/api/business/transactions'];
+        }
+        if (!parsed['/api/home/transactions'] || parsed['/api/home/transactions'].length === 0) {
+            parsed['/api/home/transactions'] = DEFAULT_SEED_DATA['/api/home/transactions'];
+        }
+        return parsed;
+    } catch(e) {
+        return JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
+    }
+}
+
+const MOCK_STORAGE = initMockStorage();
 
 function persistStaticDb() {
     try {
-        localStorage.setItem('ENTERPRISE_STATIC_DB', JSON.stringify(MOCK_STORAGE));
+        localStorage.setItem('ENTERPRISE_STATIC_DB_V2', JSON.stringify(MOCK_STORAGE));
     } catch(e) {
         console.warn("Unable to persist static DB to localStorage", e);
     }
