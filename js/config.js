@@ -19,8 +19,9 @@ if (typeof supabase !== 'undefined') {
     }
 }
 
-// Demo Fallback Memory Store for Static Environments (GitHub Pages / Offline)
-const MOCK_STORAGE = {
+// Persistent Offline Mock Database for Static Environments (GitHub Pages)
+const SAVED_STATIC_DB = localStorage.getItem('ENTERPRISE_STATIC_DB');
+const MOCK_STORAGE = SAVED_STATIC_DB ? JSON.parse(SAVED_STATIC_DB) : {
     '/api/petrol-bunk/slips': [],
     '/api/petrol-bunk/daily-sales': [],
     '/api/shop-rent/tenants': [],
@@ -29,6 +30,14 @@ const MOCK_STORAGE = {
     '/api/agriculture/records': [],
     '/api/home/transactions': []
 };
+
+function persistStaticDb() {
+    try {
+        localStorage.setItem('ENTERPRISE_STATIC_DB', JSON.stringify(MOCK_STORAGE));
+    } catch(e) {
+        console.warn("Unable to persist static DB to localStorage", e);
+    }
+}
 
 // Helper: Compute dynamic master financial summary from MOCK_STORAGE memory store (Cumulative All-Time)
 function getDynamicMockMonthlySummary() {
@@ -132,6 +141,53 @@ async function apiFetch(endpoint, options = {}) {
         if (cleanEp === '/api/dashboard/monthly-summary') {
             return getDynamicMockMonthlySummary();
         }
+
+        // POST HANDLER FOR OFFLINE / GITHUB PAGES PERSISTENCE
+        if (options.method === 'POST') {
+            let bodyObj = {};
+            try {
+                bodyObj = JSON.parse(options.body || '{}');
+            } catch(e) {}
+
+            bodyObj.id = bodyObj.id || 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            
+            // Auto calculate fields for petrol daily sales if needed
+            if (cleanEp === '/api/petrol-bunk/daily-sales') {
+                const pPrice = parseFloat(bodyObj.petrol_price) || 100.75;
+                const dPrice = parseFloat(bodyObj.diesel_price) || 92.34;
+                const pCost = parseFloat(bodyObj.petrol_cost) || (pPrice - 3.50);
+                const dCost = parseFloat(bodyObj.diesel_cost) || (dPrice - 3.20);
+                const pLiters = parseFloat(bodyObj.petrol_liters) || 0;
+                const dLiters = parseFloat(bodyObj.diesel_liters) || 0;
+
+                bodyObj.total_revenue = (pLiters * pPrice) + (dLiters * dPrice);
+                bodyObj.total_profit = (pLiters * (pPrice - pCost)) + (dLiters * (dPrice - dCost));
+            }
+
+            // Auto calculate fields for business transactions
+            if (cleanEp === '/api/business/transactions') {
+                const emptyWeight = parseFloat(bodyObj.empty_weight_tons) || 0;
+                const totalWeight = parseFloat(bodyObj.total_weight_tons) || 0;
+                const netWeight = Math.max(0, totalWeight - emptyWeight);
+                const buyRate = parseFloat(bodyObj.buy_rate_per_ton) || 0;
+                const sellRate = parseFloat(bodyObj.sell_rate_per_ton) || 0;
+
+                bodyObj.net_weight_tons = netWeight;
+                bodyObj.supplier_amount = netWeight * buyRate;
+                bodyObj.company_amount = netWeight * sellRate;
+                bodyObj.net_profit = bodyObj.company_amount - bodyObj.supplier_amount;
+                bodyObj.supplier_paid_status = bodyObj.supplier_paid_status ? 1 : 0;
+                bodyObj.company_paid_status = bodyObj.company_paid_status ? 1 : 0;
+            }
+
+            if (!MOCK_STORAGE[cleanEp]) {
+                MOCK_STORAGE[cleanEp] = [];
+            }
+            MOCK_STORAGE[cleanEp].unshift(bodyObj);
+            persistStaticDb();
+
+            return { success: true, id: bodyObj.id, ...bodyObj };
+        }
         
         if (options.method === 'DELETE') {
             const id = cleanEp.split('/').pop();
@@ -140,6 +196,7 @@ async function apiFetch(endpoint, options = {}) {
                     MOCK_STORAGE[key] = MOCK_STORAGE[key].filter(item => item.id !== id && item.tenant_id !== id);
                 }
             });
+            persistStaticDb();
             return { success: true, id };
         }
 
@@ -161,6 +218,7 @@ async function apiFetch(endpoint, options = {}) {
                     });
                 }
             });
+            persistStaticDb();
             return { success: true, id };
         }
 
