@@ -191,24 +191,22 @@ module.exports = async (req, res) => {
             }
         }
 
-        // --- CONSOLIDATED MASTER MONTHLY SUMMARY API ---
+        // --- CONSOLIDATED MASTER FINANCIAL SUMMARY API (CUMULATIVE ALL-TIME) ---
         if (pathname === '/api/dashboard/monthly-summary' && req.method === 'GET') {
             const currentMonthStr = new Date().toISOString().slice(0, 7);
 
             const petrolSales = database ? database.prepare(`SELECT * FROM petrol_daily_sales`).all() : [];
             let petrolRevenue = 0, petrolProfit = 0;
             petrolSales.forEach(s => {
-                if ((s.sale_date || '').startsWith(currentMonthStr)) {
-                    petrolRevenue += (parseFloat(s.total_revenue) || 0);
-                    petrolProfit += (parseFloat(s.total_profit) || 0);
-                }
+                petrolRevenue += (parseFloat(s.total_revenue) || 0);
+                petrolProfit += (parseFloat(s.total_profit) || 0);
             });
             const petrolExpenses = petrolRevenue - petrolProfit;
 
             const rentPayments = database ? database.prepare(`SELECT * FROM shop_rent_payments`).all() : [];
             let shopRentIncome = 0;
             rentPayments.forEach(sp => {
-                if (sp.rent_month === currentMonthStr && sp.is_paid === 1) {
+                if (sp.is_paid === 1) {
                     shopRentIncome += (parseFloat(sp.amount_paid) || 0);
                 }
             });
@@ -216,34 +214,28 @@ module.exports = async (req, res) => {
             const trades = database ? database.prepare(`SELECT * FROM business_transactions`).all() : [];
             let bizRevenue = 0, bizExpenses = 0, bizProfit = 0;
             trades.forEach(t => {
-                if ((t.transaction_date || '').startsWith(currentMonthStr)) {
-                    if (t.company_paid_status === 1) {
-                        bizRevenue += (parseFloat(t.company_amount) || 0);
-                        bizExpenses += (parseFloat(t.supplier_amount) || 0);
-                        bizProfit += (parseFloat(t.net_profit) || 0);
-                    }
+                if (t.company_paid_status === 1) {
+                    bizRevenue += (parseFloat(t.company_amount) || 0);
+                    bizExpenses += (parseFloat(t.supplier_amount) || 0);
+                    bizProfit += (parseFloat(t.net_profit) || 0);
                 }
             });
 
             const agriRecords = database ? database.prepare(`SELECT * FROM agriculture_records`).all() : [];
             let agriRevenue = 0, agriExpenses = 0;
             agriRecords.forEach(r => {
-                if ((r.record_date || '').startsWith(currentMonthStr)) {
-                    const amt = parseFloat(r.amount) || 0;
-                    if (r.record_type === 'INCOME') agriRevenue += amt;
-                    else agriExpenses += amt;
-                }
+                const amt = parseFloat(r.amount) || 0;
+                if (r.record_type === 'INCOME') agriRevenue += amt;
+                else agriExpenses += amt;
             });
             const agriProfit = agriRevenue - agriExpenses;
 
             const homeTx = database ? database.prepare(`SELECT * FROM home_transactions`).all() : [];
             let homeIncome = 0, homeExpenses = 0;
             homeTx.forEach(h => {
-                if ((h.transaction_date || '').startsWith(currentMonthStr)) {
-                    const amt = parseFloat(h.amount) || 0;
-                    if (h.transaction_type === 'INCOME') homeIncome += amt;
-                    else homeExpenses += amt;
-                }
+                const amt = parseFloat(h.amount) || 0;
+                if (h.transaction_type === 'INCOME') homeIncome += amt;
+                else homeExpenses += amt;
             });
             const homeSurplus = homeIncome - homeExpenses;
 

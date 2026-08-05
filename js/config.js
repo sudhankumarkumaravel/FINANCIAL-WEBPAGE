@@ -30,24 +30,22 @@ const MOCK_STORAGE = {
     '/api/home/transactions': []
 };
 
-// Helper: Compute dynamic monthly summary from MOCK_STORAGE memory store
+// Helper: Compute dynamic master financial summary from MOCK_STORAGE memory store (Cumulative All-Time)
 function getDynamicMockMonthlySummary() {
     const currentMonthStr = new Date().toISOString().slice(0, 7);
 
-    // 1. Petrol
+    // 1. Petrol Bunk
     let petrolRevenue = 0, petrolProfit = 0;
     (MOCK_STORAGE['/api/petrol-bunk/daily-sales'] || []).forEach(s => {
-        if ((s.sale_date || '').startsWith(currentMonthStr)) {
-            petrolRevenue += (parseFloat(s.total_revenue) || 0);
-            petrolProfit += (parseFloat(s.total_profit) || 0);
-        }
+        petrolRevenue += (parseFloat(s.total_revenue) || 0);
+        petrolProfit += (parseFloat(s.total_profit) || 0);
     });
     const petrolExpenses = petrolRevenue - petrolProfit;
 
     // 2. Shop Rent
     let shopRentIncome = 0;
     (MOCK_STORAGE['/api/shop-rent/payments'] || []).forEach(sp => {
-        if (sp.rent_month === currentMonthStr && sp.is_paid) {
+        if (sp.is_paid) {
             shopRentIncome += (parseFloat(sp.amount_paid) || 0);
         }
     });
@@ -55,34 +53,28 @@ function getDynamicMockMonthlySummary() {
     // 3. Freight Business
     let bizRevenue = 0, bizExpenses = 0, bizProfit = 0;
     (MOCK_STORAGE['/api/business/transactions'] || []).forEach(t => {
-        if ((t.transaction_date || '').startsWith(currentMonthStr)) {
-            if (t.company_paid_status === 1 || t.company_paid_status === true) {
-                bizRevenue += (parseFloat(t.company_amount) || 0);
-                bizExpenses += (parseFloat(t.supplier_amount) || 0);
-                bizProfit += (parseFloat(t.net_profit) || 0);
-            }
+        if (t.company_paid_status === 1 || t.company_paid_status === true) {
+            bizRevenue += (parseFloat(t.company_amount) || 0);
+            bizExpenses += (parseFloat(t.supplier_amount) || 0);
+            bizProfit += (parseFloat(t.net_profit) || 0);
         }
     });
 
     // 4. Agriculture
     let agriRevenue = 0, agriExpenses = 0;
     (MOCK_STORAGE['/api/agriculture/records'] || []).forEach(r => {
-        if ((r.record_date || '').startsWith(currentMonthStr)) {
-            const amt = parseFloat(r.amount) || 0;
-            if (r.record_type === 'INCOME') agriRevenue += amt;
-            else agriExpenses += amt;
-        }
+        const amt = parseFloat(r.amount) || 0;
+        if (r.record_type === 'INCOME') agriRevenue += amt;
+        else agriExpenses += amt;
     });
     const agriProfit = agriRevenue - agriExpenses;
 
     // 5. Home Household
     let homeIncome = 0, homeExpenses = 0;
     (MOCK_STORAGE['/api/home/transactions'] || []).forEach(h => {
-        if ((h.transaction_date || '').startsWith(currentMonthStr)) {
-            const amt = parseFloat(h.amount) || 0;
-            if (h.transaction_type === 'INCOME') homeIncome += amt;
-            else homeExpenses += amt;
-        }
+        const amt = parseFloat(h.amount) || 0;
+        if (h.transaction_type === 'INCOME') homeIncome += amt;
+        else homeExpenses += amt;
     });
     const homeSurplus = homeIncome - homeExpenses;
 
