@@ -268,13 +268,14 @@ const server = http.createServer(async (req, res) => {
     console.log(`[${req.method}] ${pathname}`);
 
     try {
-        // --- AUTH API (Updated password: sudhan@2008@) ---
+        // --- AUTH API (Username: sudhankumar, Password: sudhan@2008@) ---
         if (pathname === '/api/auth/login' && req.method === 'POST') {
             const body = await parseBody(req);
-            if (body.username === 'admin' && body.password === 'sudhan@2008@') {
-                return sendJson(res, { success: true, user: { username: 'admin', role: 'Administrator' }, token: 'enterprise-session-token-xyz' });
+            const user = (body.username || 'sudhankumar').toLowerCase().trim();
+            if ((user === 'sudhankumar' || user === 'admin') && body.password === 'sudhan@2008@') {
+                return sendJson(res, { success: true, user: { username: 'sudhankumar', role: 'Administrator' }, token: 'enterprise-session-token-xyz' });
             } else {
-                return sendJson(res, { success: false, error: 'Invalid credentials. Use admin / sudhan@2008@' }, 401);
+                return sendJson(res, { success: false, error: 'Invalid password. Enter sudhan@2008@' }, 401);
             }
         }
 

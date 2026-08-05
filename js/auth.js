@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateDisplay = document.getElementById('currentDateNav');
 
     if (userDisplay) {
-        const user = JSON.parse(localStorage.getItem('enterprise_user') || '{"username":"admin"}');
+        const user = JSON.parse(localStorage.getItem('enterprise_user') || '{"username":"sudhankumar"}');
         userDisplay.innerText = `👤 ${user.username}`;
     }
 
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Login Handler
 async function performLogin(event) {
     event.preventDefault();
-    const usernameInput = document.getElementById('usernameInput').value;
+    const usernameInput = (document.getElementById('usernameInput')?.value || 'sudhankumar').trim();
     const passwordInput = document.getElementById('passwordInput').value;
     const loginError = document.getElementById('loginError');
 
@@ -57,17 +57,17 @@ async function performLogin(event) {
             localStorage.setItem('enterprise_user', JSON.stringify(data.user));
             window.location.href = 'dashboard.html';
         } else {
-            showLoginError(data.error || "Invalid username or password");
+            showLoginError(data.error || "Invalid password");
         }
     } catch (err) {
         console.warn("API Login failed, trying offline auth fallback...", err);
-        // Fallback for static GitHub Pages / offline mode (Updated password: sudhan@2008@)
-        if (usernameInput === 'admin' && passwordInput === 'sudhan@2008@') {
+        // Fallback for static GitHub Pages / offline mode (Username: sudhankumar, Password: sudhan@2008@)
+        if (passwordInput === 'sudhan@2008@') {
             localStorage.setItem('enterprise_token', 'offline-token-12345');
-            localStorage.setItem('enterprise_user', JSON.stringify({ username: 'admin', role: 'Administrator' }));
+            localStorage.setItem('enterprise_user', JSON.stringify({ username: 'sudhankumar', role: 'Administrator' }));
             window.location.href = 'dashboard.html';
         } else {
-            showLoginError("Invalid credentials. Try: admin / sudhan@2008@");
+            showLoginError("Incorrect password. Enter: sudhan@2008@");
         }
     }
 }
