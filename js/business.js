@@ -1,5 +1,5 @@
 // ============================================================
-// BUSINESS LEDGER MODULE - WEIGHBRIDGE FREIGHT & PDF REPORT GENERATOR
+// BUSINESS LEDGER MODULE - STATEMENT & PDF REPORT GENERATOR
 // ============================================================
 
 let cachedBusinessTransactions = [];
@@ -49,7 +49,7 @@ function calculateLiveTrade() {
     }
 }
 
-// 2. Submit Weighbridge Transaction Form
+// 2. Submit Transaction Form
 async function handleTradeSubmit(event) {
     event.preventDefault();
 
@@ -80,7 +80,7 @@ async function handleTradeSubmit(event) {
             body: JSON.stringify(payload)
         });
 
-        alert("✅ Weighbridge Freight Trade Entry Saved!");
+        alert("✅ Business Ledger Entry Saved!");
         document.getElementById('businessTradeForm').reset();
         initBusinessPage();
     } catch (e) {
@@ -100,7 +100,7 @@ async function loadBusinessTradesLedger() {
         tbody.innerHTML = '';
 
         if (!cachedBusinessTransactions || !Array.isArray(cachedBusinessTransactions) || cachedBusinessTransactions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="11" class="text-center" style="padding: 24px; color: #94a3b8;">No weighbridge freight entries recorded. Log a transaction above.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center" style="padding: 24px; color: #94a3b8;">No business ledger entries recorded. Log a transaction above.</td></tr>';
             updateKPIs(0, 0, 0, 0, 0);
             return;
         }
@@ -193,7 +193,6 @@ function updateKPIs(monthNetProfit, monthTonnage, supplierPending, companyPendin
     if (kpiCompanyPendingCountEl) kpiCompanyPendingCountEl.innerText = `${companyPendingCount} Pending Receivables`;
 }
 
-// Alias for backwards compatibility
 function loadBusinessTransactions() {
     loadBusinessTradesLedger();
 }
@@ -220,7 +219,7 @@ async function toggleCompanyPaid(id) {
 
 // Delete Transaction Record
 async function deleteBusinessTx(id) {
-    if (!confirm("Are you sure you want to delete this freight transaction?")) return;
+    if (!confirm("Are you sure you want to delete this business entry?")) return;
     try {
         await apiFetch(`/api/business/transactions/${id}`, { method: 'DELETE' });
         loadBusinessTradesLedger();
@@ -279,18 +278,18 @@ async function handlePdfExportSubmit(event) {
             return;
         }
         filteredTxs = cachedBusinessTransactions.filter(t => (t.transaction_date || '').startsWith(selectedMonth));
-        periodTitle = `Monthly Report (${selectedMonth})`;
+        periodTitle = `Monthly Statement (${selectedMonth})`;
     } else if (filterType === 'year') {
         const selectedYear = document.getElementById('pdfYearSelect').value;
         filteredTxs = cachedBusinessTransactions.filter(t => (t.transaction_date || '').startsWith(selectedYear));
-        periodTitle = `Annual Report (Year ${selectedYear})`;
+        periodTitle = `Annual Statement (Year ${selectedYear})`;
     } else {
         filteredTxs = cachedBusinessTransactions;
-        periodTitle = `Complete All-Time Freight Ledger`;
+        periodTitle = `Complete All-Time Business Ledger Statement`;
     }
 
     if (filteredTxs.length === 0) {
-        alert(`No freight trade records found for ${periodTitle}`);
+        alert(`No business entries found for ${periodTitle}`);
         return;
     }
 
@@ -317,12 +316,12 @@ async function handlePdfExportSubmit(event) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(255, 255, 255);
-    doc.text("BUSINESS WEIGHBRIDGE FREIGHT LEDGER STATEMENT", 14, 15);
+    doc.text("BUSINESS LEDGER STATEMENT", 14, 15);
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(158, 247, 210); // Mint green
-    doc.text(`PERIOD: ${periodTitle.toUpperCase()}`, 190, 15);
+    doc.text(`PERIOD: ${periodTitle.toUpperCase()}`, 180, 15);
 
     // KPI Metric Box
     doc.setFillColor(241, 245, 249);
@@ -333,13 +332,13 @@ async function handlePdfExportSubmit(event) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(51, 65, 85);
-    doc.text(`Total Freight Trips: ${filteredTxs.length}`, 18, 35);
+    doc.text(`Total Trips Logged: ${filteredTxs.length}`, 18, 35);
     doc.text(`Net Weight Handled: ${totalTons.toFixed(2)} Tons`, 75, 35);
     doc.text(`Supplier Payable: RS. ${formatCurrency(totalSupplierAmt)}`, 140, 35);
     doc.text(`Company Receivable: RS. ${formatCurrency(totalCompanyAmt)}`, 205, 35);
 
     doc.setTextColor(16, 185, 129); // Green profit
-    doc.text(`NET TRADE PROFIT: RS. ${formatCurrency(totalNetProfit)}`, 18, 42);
+    doc.text(`NET PROFIT: RS. ${formatCurrency(totalNetProfit)}`, 18, 42);
 
     // AutoTable Data Formatting
     const tableHeaders = [["#", "Date", "Vehicle No.", "Supplier Name", "Company Name", "Net Weight", "Supplier Amt", "Company Amt", "Net Profit", "Status"]];
@@ -379,6 +378,6 @@ async function handlePdfExportSubmit(event) {
     });
 
     const sanitizedTitle = periodTitle.replace(/[^a-zA-Z0-9]/g, '_');
-    doc.save(`Business_Freight_Ledger_${sanitizedTitle}.pdf`);
+    doc.save(`Business_Ledger_Statement_${sanitizedTitle}.pdf`);
     closeExportPdfModal();
 }

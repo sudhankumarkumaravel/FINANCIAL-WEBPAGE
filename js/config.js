@@ -123,6 +123,20 @@ async function apiFetch(endpoint, options = {}) {
         console.warn(`API call to ${endpoint} using dynamic fallback data...`, err);
         const cleanEp = endpoint.split('?')[0].replace(/\/$/, '');
 
+        // STRICT PASSWORD CHECK FOR AUTH LOGIN ENDPOINT
+        if (cleanEp === '/api/auth/login') {
+            let bodyObj = {};
+            try {
+                bodyObj = JSON.parse(options.body || '{}');
+            } catch(e) {}
+
+            if (bodyObj.password === 'sudhan@2008@') {
+                return { success: true, user: { username: 'sudhankumar', role: 'Administrator' }, token: 'enterprise-session-token-xyz' };
+            } else {
+                return { success: false, error: 'Incorrect password. Access denied.' };
+            }
+        }
+
         if (cleanEp === '/api/dashboard/monthly-summary') {
             return getDynamicMockMonthlySummary();
         }

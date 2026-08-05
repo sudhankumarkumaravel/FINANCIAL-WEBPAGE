@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Login Handler
+// Strict Login Handler - Password MUST match "sudhan@2008@"
 async function performLogin(event) {
     event.preventDefault();
     const usernameInput = (document.getElementById('usernameInput')?.value || 'sudhankumar').trim();
@@ -49,7 +49,13 @@ async function performLogin(event) {
     if (loginError) loginError.style.display = 'none';
 
     if (!passwordInput) {
-        showLoginError("Please enter your password.");
+        showLoginError("❌ Please enter your password.");
+        return;
+    }
+
+    // Strict Password Validation
+    if (passwordInput !== 'sudhan@2008@') {
+        showLoginError("❌ Incorrect password. Access denied.");
         return;
     }
 
@@ -59,22 +65,21 @@ async function performLogin(event) {
             body: JSON.stringify({ username: usernameInput, password: passwordInput })
         });
 
-        if (data.success) {
-            localStorage.setItem('enterprise_token', data.token);
-            localStorage.setItem('enterprise_user', JSON.stringify(data.user));
+        if (data && data.success) {
+            localStorage.setItem('enterprise_token', data.token || 'enterprise-session-token-xyz');
+            localStorage.setItem('enterprise_user', JSON.stringify(data.user || { username: 'sudhankumar', role: 'Administrator' }));
             window.location.href = 'dashboard.html';
         } else {
-            showLoginError(data.error || "Incorrect password. Access denied.");
+            showLoginError("❌ Incorrect password. Access denied.");
         }
     } catch (err) {
-        console.warn("API Login failed, trying offline auth fallback...", err);
-        // Strict fallback matching: password MUST equal sudhan@2008@
+        console.warn("API Login network exception, checking offline credentials...", err);
         if (passwordInput === 'sudhan@2008@') {
             localStorage.setItem('enterprise_token', 'offline-token-12345');
             localStorage.setItem('enterprise_user', JSON.stringify({ username: 'sudhankumar', role: 'Administrator' }));
             window.location.href = 'dashboard.html';
         } else {
-            showLoginError("Incorrect password. Access denied.");
+            showLoginError("❌ Incorrect password. Access denied.");
         }
     }
 }

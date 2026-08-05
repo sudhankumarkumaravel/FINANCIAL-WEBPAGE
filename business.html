@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Business Weighbridge Freight Trade, Net Weight Calculator & Monthly Profit Analytics">
-    <title>Business Cashflow | Enterprise Management System</title>
+    <meta name="description" content="Business Ledger Statement, Net Weight Calculator & Monthly Profit Analytics">
+    <title>Business Ledger | Enterprise Management System</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- jsPDF & AutoTable for Client-Side PDF Report Generation -->
@@ -41,7 +41,7 @@
             <!-- Topbar -->
             <header class="app-topbar">
                 <div class="topbar-title">
-                    <span>💼 Weighbridge Freight Trade & Monthly Profit Command</span>
+                    <span>💼 Business Ledger Command & Statement Center</span>
                     <span style="font-size: 12px; font-weight: 600; background: var(--status-success-bg); color: var(--status-success); border: 1px solid var(--status-success-border); padding: 4px 14px; border-radius: 20px; margin-left: 12px; display: inline-flex; align-items: center;">
                         <span class="pulse-beacon"></span>Live Database Connected
                     </span>
@@ -86,10 +86,10 @@
                     </div>
                 </div>
 
-                <!-- WEIGHBRIDGE FREIGHT TRADE ENTRY FORM -->
+                <!-- BUSINESS LEDGER ENTRY FORM -->
                 <div class="card">
                     <h2 class="card-header">
-                        <span>🚛 New Weighbridge Freight & Material Entry</span>
+                        <span>💼 New Business Ledger Entry</span>
                         <span style="font-size: 13px; font-weight: 500; color: #94a3b8;">Auto Net Weight, Buy/Sell Rates & Profit</span>
                     </h2>
 
@@ -107,16 +107,16 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="supplierNameInput">Supplier / Quarry Name (Buy From)</label>
+                                <label for="supplierNameInput">Supplier Name (Buy From)</label>
                                 <input type="text" id="supplierNameInput" class="form-control" placeholder="e.g. Sri Ram Blue Metal" required>
                             </div>
                             <div class="form-group">
-                                <label for="companyNameInput">Company / Buyer Name (Sell To)</label>
+                                <label for="companyNameInput">Company Name (Sell To)</label>
                                 <input type="text" id="companyNameInput" class="form-control" placeholder="e.g. L&T Infrastructure Corp" required>
                             </div>
                         </div>
 
-                        <!-- WEIGHBRIDGE WEIGHT CALCULATOR -->
+                        <!-- WEIGHT CALCULATOR -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="emptyWeightInput">Empty Truck Weight (Tons)</label>
@@ -177,17 +177,17 @@
                         </div>
 
                         <button type="submit" class="btn btn-accent btn-block">
-                            💾 Save Weighbridge Entry & Record Profit
+                            💾 Save Business Entry & Record Profit
                         </button>
                     </form>
                 </div>
 
-                <!-- WEIGHBRIDGE FREIGHT TRADES LEDGER TABLE WITH EXPORT PDF -->
+                <!-- BUSINESS LEDGER STATEMENT TABLE WITH EXPORT PDF -->
                 <div class="card">
                     <h2 class="card-header">
-                        <span>📜 Weighbridge Freight Trade Ledger</span>
+                        <span>📜 Business Ledger Statement</span>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <button class="btn btn-accent" onclick="openExportPdfModal()">📄 Export PDF Report</button>
+                            <button class="btn btn-accent" onclick="openExportPdfModal()">📄 Export PDF Statement</button>
                             <button class="btn btn-secondary" onclick="loadBusinessTradesLedger()">🔄 Refresh Ledger</button>
                         </div>
                     </h2>
@@ -211,7 +211,7 @@
                             </thead>
                             <tbody id="businessTradesTableBody">
                                 <tr>
-                                    <td colspan="11" class="text-center" style="padding: 24px; color: #94a3b8;">Loading weighbridge trades...</td>
+                                    <td colspan="11" class="text-center" style="padding: 24px; color: #94a3b8;">Loading business ledger statement...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -226,7 +226,7 @@
     <div id="exportPdfModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📄 Export Business Freight PDF Report</h3>
+                <h3>📄 Export Business Ledger Statement PDF</h3>
                 <button class="modal-close" onclick="closeExportPdfModal()">&times;</button>
             </div>
             
@@ -258,7 +258,7 @@
 
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
                     <button type="button" class="btn btn-secondary btn-block" onclick="closeExportPdfModal()">Cancel</button>
-                    <button type="submit" class="btn btn-accent btn-block">📥 Download PDF Report</button>
+                    <button type="submit" class="btn btn-accent btn-block">📥 Download PDF Statement</button>
                 </div>
             </form>
         </div>
