@@ -78,7 +78,39 @@ async function apiFetch(endpoint, options = {}) {
         return await response.json();
     } catch (err) {
         console.warn(`API call to ${endpoint} using static fallback data...`, err);
-        const cleanEp = endpoint.split('?')[0];
+        const cleanEp = endpoint.split('?')[0].replace(/\/$/, '');
+        
+        if (options.method === 'DELETE') {
+            const id = cleanEp.split('/').pop();
+            Object.keys(MOCK_STORAGE).forEach(key => {
+                if (Array.isArray(MOCK_STORAGE[key])) {
+                    MOCK_STORAGE[key] = MOCK_STORAGE[key].filter(item => item.id !== id && item.tenant_id !== id);
+                }
+            });
+            return { success: true, id };
+        }
+
+        if (options.method === 'PUT') {
+            const parts = cleanEp.split('/');
+            const id = parts[4] || parts[3];
+            Object.keys(MOCK_STORAGE).forEach(key => {
+                if (Array.isArray(MOCK_STORAGE[key])) {
+                    MOCK_STORAGE[key].forEach(item => {
+                        if (item.id === id) {
+                            if (cleanEp.includes('toggle-paid') || cleanEp.includes('toggle-company-paid')) {
+                                item.is_paid = item.is_paid ? 0 : 1;
+                                item.company_paid_status = item.company_paid_status ? 0 : 1;
+                            }
+                            if (cleanEp.includes('toggle-supplier-paid')) {
+                                item.supplier_paid_status = item.supplier_paid_status ? 0 : 1;
+                            }
+                        }
+                    });
+                }
+            });
+            return { success: true, id };
+        }
+
         if (MOCK_STORAGE[cleanEp]) {
             return MOCK_STORAGE[cleanEp];
         }

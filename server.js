@@ -252,6 +252,10 @@ function parseBody(req) {
     });
 }
 
+function getCleanId(pathname) {
+    return pathname.replace(/\/$/, '').split('/').pop();
+}
+
 // HTTP Server Router
 const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') {
@@ -268,7 +272,7 @@ const server = http.createServer(async (req, res) => {
     console.log(`[${req.method}] ${pathname}`);
 
     try {
-        // --- AUTH API (Username: sudhankumar, Password: sudhan@2008@) ---
+        // --- AUTH API ---
         if (pathname === '/api/auth/login' && req.method === 'POST') {
             const body = await parseBody(req);
             const user = (body.username || 'sudhankumar').toLowerCase().trim();
@@ -395,7 +399,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/petrol-bunk/daily-sales/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             db.prepare(`DELETE FROM petrol_daily_sales WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -423,7 +427,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/petrol-bunk/slips/') && pathname.endsWith('/toggle-paid') && req.method === 'PUT') {
-            const parts = pathname.split('/');
+            const parts = pathname.replace(/\/$/, '').split('/');
             const id = parts[4];
             const slip = db.prepare(`SELECT is_paid FROM petrol_slips WHERE id = ?`).get(id);
             if (!slip) return sendJson(res, { error: 'Slip not found' }, 404);
@@ -434,7 +438,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/petrol-bunk/slips/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             db.prepare(`DELETE FROM petrol_slips WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -459,8 +463,9 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/shop-rent/tenants/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             db.prepare(`DELETE FROM shop_tenants WHERE id = ?`).run(id);
+            db.prepare(`DELETE FROM shop_rent_payments WHERE tenant_id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
 
@@ -485,7 +490,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/shop-rent/payments/') && pathname.endsWith('/toggle-paid') && req.method === 'PUT') {
-            const parts = pathname.split('/');
+            const parts = pathname.replace(/\/$/, '').split('/');
             const id = parts[4];
             const pay = db.prepare(`SELECT is_paid FROM shop_rent_payments WHERE id = ?`).get(id);
             if (!pay) return sendJson(res, { error: 'Payment record not found' }, 404);
@@ -496,7 +501,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/shop-rent/payments/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             db.prepare(`DELETE FROM shop_rent_payments WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -547,7 +552,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/business/transactions/') && pathname.endsWith('/toggle-supplier-paid') && req.method === 'PUT') {
-            const parts = pathname.split('/');
+            const parts = pathname.replace(/\/$/, '').split('/');
             const id = parts[4];
             const tx = db.prepare(`SELECT supplier_paid_status FROM business_transactions WHERE id = ?`).get(id);
             if (!tx) return sendJson(res, { error: 'Trade entry not found' }, 404);
@@ -558,7 +563,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/business/transactions/') && pathname.endsWith('/toggle-company-paid') && req.method === 'PUT') {
-            const parts = pathname.split('/');
+            const parts = pathname.replace(/\/$/, '').split('/');
             const id = parts[4];
             const tx = db.prepare(`SELECT company_paid_status FROM business_transactions WHERE id = ?`).get(id);
             if (!tx) return sendJson(res, { error: 'Trade entry not found' }, 404);
@@ -569,7 +574,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/business/transactions/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             db.prepare(`DELETE FROM business_transactions WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -597,7 +602,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/agriculture/records/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             db.prepare(`DELETE FROM agriculture_records WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -624,7 +629,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (pathname.startsWith('/api/home/transactions/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             db.prepare(`DELETE FROM home_transactions WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }

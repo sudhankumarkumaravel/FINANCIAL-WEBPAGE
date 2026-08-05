@@ -221,6 +221,10 @@ function parseBody(req) {
     });
 }
 
+function getCleanId(pathname) {
+    return pathname.replace(/\/$/, '').split('/').pop();
+}
+
 // Vercel Serverless Function Export
 module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') {
@@ -237,7 +241,7 @@ module.exports = async (req, res) => {
     const database = getDb();
 
     try {
-        // --- AUTH API (Username: sudhankumar, Password: sudhan@2008@) ---
+        // --- AUTH API ---
         if (pathname === '/api/auth/login' && req.method === 'POST') {
             const body = await parseBody(req);
             const user = (body.username || 'sudhankumar').toLowerCase().trim();
@@ -360,7 +364,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/petrol-bunk/daily-sales/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             if (database) database.prepare(`DELETE FROM petrol_daily_sales WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -390,7 +394,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/petrol-bunk/slips/') && pathname.endsWith('/toggle-paid') && req.method === 'PUT') {
-            const parts = pathname.split('/');
+            const parts = pathname.replace(/\/$/, '').split('/');
             const id = parts[4];
             const slip = database ? database.prepare(`SELECT is_paid FROM petrol_slips WHERE id = ?`).get(id) : null;
             if (!slip) return sendJson(res, { error: 'Slip not found' }, 404);
@@ -401,7 +405,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/petrol-bunk/slips/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             if (database) database.prepare(`DELETE FROM petrol_slips WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -428,8 +432,11 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/shop-rent/tenants/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
-            if (database) database.prepare(`DELETE FROM shop_tenants WHERE id = ?`).run(id);
+            const id = getCleanId(pathname);
+            if (database) {
+                database.prepare(`DELETE FROM shop_tenants WHERE id = ?`).run(id);
+                database.prepare(`DELETE FROM shop_rent_payments WHERE tenant_id = ?`).run(id);
+            }
             return sendJson(res, { success: true, id });
         }
 
@@ -456,7 +463,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/shop-rent/payments/') && pathname.endsWith('/toggle-paid') && req.method === 'PUT') {
-            const parts = pathname.split('/');
+            const parts = pathname.replace(/\/$/, '').split('/');
             const id = parts[4];
             const pay = database ? database.prepare(`SELECT is_paid FROM shop_rent_payments WHERE id = ?`).get(id) : null;
             if (!pay) return sendJson(res, { error: 'Payment record not found' }, 404);
@@ -467,7 +474,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/shop-rent/payments/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             if (database) database.prepare(`DELETE FROM shop_rent_payments WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -520,7 +527,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/business/transactions/') && pathname.endsWith('/toggle-supplier-paid') && req.method === 'PUT') {
-            const parts = pathname.split('/');
+            const parts = pathname.replace(/\/$/, '').split('/');
             const id = parts[4];
             const tx = database ? database.prepare(`SELECT supplier_paid_status FROM business_transactions WHERE id = ?`).get(id) : null;
             if (!tx) return sendJson(res, { error: 'Trade entry not found' }, 404);
@@ -531,7 +538,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/business/transactions/') && pathname.endsWith('/toggle-company-paid') && req.method === 'PUT') {
-            const parts = pathname.split('/');
+            const parts = pathname.replace(/\/$/, '').split('/');
             const id = parts[4];
             const tx = database ? database.prepare(`SELECT company_paid_status FROM business_transactions WHERE id = ?`).get(id) : null;
             if (!tx) return sendJson(res, { error: 'Trade entry not found' }, 404);
@@ -542,7 +549,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/business/transactions/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             if (database) database.prepare(`DELETE FROM business_transactions WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -572,7 +579,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/agriculture/records/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             if (database) database.prepare(`DELETE FROM agriculture_records WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }
@@ -601,7 +608,7 @@ module.exports = async (req, res) => {
         }
 
         if (pathname.startsWith('/api/home/transactions/') && req.method === 'DELETE') {
-            const id = pathname.split('/').pop();
+            const id = getCleanId(pathname);
             if (database) database.prepare(`DELETE FROM home_transactions WHERE id = ?`).run(id);
             return sendJson(res, { success: true, id });
         }

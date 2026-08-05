@@ -21,8 +21,8 @@ async function initShopRentPage() {
     if (rentMonthEl) rentMonthEl.value = currentMonth;
 
     await loadTenantsDropdown();
-    loadTenantsDirectory();
-    loadRentPaymentsLedger();
+    await loadTenantsDirectory();
+    await loadRentPaymentsLedger();
 }
 
 // 1. Load Tenants Dropdown & Store Tenants Map
@@ -34,45 +34,53 @@ async function loadTenantsDropdown() {
         tenantsList = await apiFetch('/api/shop-rent/tenants');
         dropdown.innerHTML = '<option value="">-- Select Tenant --</option>';
 
-        tenantsList.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t.id;
-            opt.innerText = `${t.tenant_name} (${t.shop_number}) - ₹${t.monthly_rent}/mo`;
-            dropdown.appendChild(opt);
-        });
+        if (Array.isArray(tenantsList)) {
+            tenantsList.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.innerText = `${t.tenant_name} (${t.shop_number}) - ₹${t.monthly_rent}/mo`;
+                dropdown.appendChild(opt);
+            });
+        }
     } catch (e) {
         console.warn("Failed to load tenants list", e);
     }
 }
 
 // 2. Load Commercial Tenants Directory (with Delete Option)
-function loadTenantsDirectory() {
+async function loadTenantsDirectory() {
     const dirTbody = document.getElementById('tenantsDirectoryTableBody');
     if (!dirTbody) return;
 
     dirTbody.innerHTML = '';
 
-    if (!tenantsList || tenantsList.length === 0) {
-        dirTbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 24px; color: #94a3b8;">No commercial tenants found. Add a tenant above.</td></tr>';
-        return;
-    }
+    try {
+        tenantsList = await apiFetch('/api/shop-rent/tenants');
 
-    tenantsList.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px;">${t.shop_number}</code></td>
-            <td><strong>${t.tenant_name}</strong></td>
-            <td>${t.aadhaar_number || '-'}</td>
-            <td>${t.contact_phone || '-'}</td>
-            <td style="font-weight: 700; color: var(--mod-shop);">₹ ${formatCurrency(t.monthly_rent)} / mo</td>
-            <td class="text-center">
-                <button class="btn btn-danger" style="padding: 4px 10px; font-size: 12px;" onclick="deleteTenantRecord('${t.id}', '${t.tenant_name}')">
-                    🗑️ Delete Tenant
-                </button>
-            </td>
-        `;
-        dirTbody.appendChild(tr);
-    });
+        if (!tenantsList || !Array.isArray(tenantsList) || tenantsList.length === 0) {
+            dirTbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 24px; color: #94a3b8;">No commercial tenants found. Add a tenant above.</td></tr>';
+            return;
+        }
+
+        tenantsList.forEach(t => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px;">${t.shop_number}</code></td>
+                <td><strong>${t.tenant_name}</strong></td>
+                <td>${t.aadhaar_number || '-'}</td>
+                <td>${t.contact_phone || '-'}</td>
+                <td style="font-weight: 700; color: var(--mod-shop);">₹ ${formatCurrency(t.monthly_rent)} / mo</td>
+                <td class="text-center">
+                    <button class="btn btn-danger" style="padding: 4px 10px; font-size: 12px;" onclick="deleteTenantRecord('${t.id}', '${t.tenant_name}')">
+                        🗑️ Delete Tenant
+                    </button>
+                </td>
+            `;
+            dirTbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.warn("Failed to render tenants directory", e);
+    }
 }
 
 // Auto-fill shop number and monthly rent amount when tenant selected
@@ -95,16 +103,16 @@ function onTenantSelectChange() {
     }
 }
 
-// 3. Delete Tenant Record
+// 3. Delete Tenant Record & Linked Payments
 async function deleteTenantRecord(id, tenantName) {
-    if (!confirm(`Are you sure you want to delete tenant "${tenantName}"? This action cannot be undone.`)) return;
+    if (!confirm(`Are you sure you want to delete tenant "${tenantName}"? All linked rent records will be removed.`)) return;
 
     try {
         await apiFetch(`/api/shop-rent/tenants/${id}`, { method: 'DELETE' });
         alert(`✅ Tenant "${tenantName}" removed successfully.`);
         await loadTenantsDropdown();
-        loadTenantsDirectory();
-        loadRentPaymentsLedger();
+        await loadTenantsDirectory();
+        await loadRentPaymentsLedger();
     } catch (e) {
         alert("Failed to delete tenant: " + e.message);
     }
@@ -142,7 +150,7 @@ async function handleRentPaymentSubmit(event) {
         alert("✅ Monthly rent payment logged successfully!");
         dropdown.value = '';
         onTenantSelectChange();
-        loadRentPaymentsLedger();
+        await loadRentPaymentsLedger();
     } catch (e) {
         alert("Failed to log rent payment: " + e.message);
     }
@@ -162,38 +170,40 @@ async function loadRentPaymentsLedger() {
         let monthCollected = 0, monthPending = 0;
         let paidCount = 0, pendingCount = 0;
 
-        payments.forEach(p => {
-            const amt = parseFloat(p.amount_paid) || 0;
-            const isForSelectedMonth = (p.rent_month === selectedMonth);
+        if (Array.isArray(payments)) {
+            payments.forEach(p => {
+                const amt = parseFloat(p.amount_paid) || 0;
+                const isForSelectedMonth = (p.rent_month === selectedMonth);
 
-            if (isForSelectedMonth) {
-                if (p.is_paid) {
-                    monthCollected += amt;
-                    paidCount++;
-                } else {
-                    monthPending += amt;
-                    pendingCount++;
+                if (isForSelectedMonth) {
+                    if (p.is_paid) {
+                        monthCollected += amt;
+                        paidCount++;
+                    } else {
+                        monthPending += amt;
+                        pendingCount++;
+                    }
                 }
-            }
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${p.payment_date}</td>
-                <td><strong>${p.tenant_name}</strong></td>
-                <td><code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px;">${p.shop_number}</code></td>
-                <td><span class="pill pill-paid">${p.rent_month}</span></td>
-                <td style="font-weight: 700;">₹ ${formatCurrency(amt)}</td>
-                <td>
-                    <button class="pill ${p.is_paid ? 'pill-paid' : 'pill-pending'}" onclick="toggleRentPaymentStatus('${p.id}')">
-                        ${p.is_paid ? '✓ PAID' : '⏳ PENDING'}
-                    </button>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteRentPaymentRecord('${p.id}')">🗑️ Delete</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${p.payment_date}</td>
+                    <td><strong>${p.tenant_name}</strong></td>
+                    <td><code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px;">${p.shop_number}</code></td>
+                    <td><span class="pill pill-paid">${p.rent_month}</span></td>
+                    <td style="font-weight: 700;">₹ ${formatCurrency(amt)}</td>
+                    <td>
+                        <button class="pill ${p.is_paid ? 'pill-paid' : 'pill-pending'}" onclick="toggleRentPaymentStatus('${p.id}')">
+                            ${p.is_paid ? '✓ PAID' : '⏳ PENDING'}
+                        </button>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteRentPaymentRecord('${p.id}')">🗑️ Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
         if (tbody.children.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 24px; color: #94a3b8;">No payment records found for month ${selectedMonth}. Log rent payments above.</td></tr>`;
@@ -232,7 +242,7 @@ async function loadRentPaymentsLedger() {
 async function toggleRentPaymentStatus(id) {
     try {
         await apiFetch(`/api/shop-rent/payments/${id}/toggle-paid`, { method: 'PUT' });
-        loadRentPaymentsLedger();
+        await loadRentPaymentsLedger();
     } catch (e) {
         alert("Failed to update status: " + e.message);
     }
@@ -243,7 +253,7 @@ async function deleteRentPaymentRecord(id) {
     if (!confirm("Are you sure you want to delete this payment record?")) return;
     try {
         await apiFetch(`/api/shop-rent/payments/${id}`, { method: 'DELETE' });
-        loadRentPaymentsLedger();
+        await loadRentPaymentsLedger();
     } catch (e) {
         alert("Failed to delete record: " + e.message);
     }
@@ -281,8 +291,8 @@ async function handleAddTenantSubmit(event) {
         closeAddTenantModal();
         document.getElementById('addTenantForm').reset();
         await loadTenantsDropdown();
-        loadTenantsDirectory();
-        loadRentPaymentsLedger();
+        await loadTenantsDirectory();
+        await loadRentPaymentsLedger();
     } catch (e) {
         alert("Failed to add tenant: " + e.message);
     }
