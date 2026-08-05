@@ -6,15 +6,23 @@ let agriRecords = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('agriculturePage')) {
-        fetchAgriRecords();
+        initAgriPage();
     }
 });
+
+function initAgriPage() {
+    const today = new Date().toISOString().split('T')[0];
+    const agriDateEl = document.getElementById('agriDate');
+    if (agriDateEl) agriDateEl.value = today;
+
+    fetchAgriRecords();
+}
 
 // Fetch Agriculture Records from Live Backend API / Supabase
 async function fetchAgriRecords() {
     try {
         const data = await apiFetch('/api/agriculture/records');
-        if (data && data.length > 0) {
+        if (data && Array.isArray(data)) {
             agriRecords = data;
             renderAgriDashboard();
             return;
@@ -48,11 +56,20 @@ function renderAgriDashboard() {
     let totalHarvestRevenue = 0;
     let totalFarmExpense = 0;
     let totalYieldCount = 0;
-    const historyHtml = [];
+    const tbody = document.getElementById('agriLogTable');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (!agriRecords || agriRecords.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 24px; color: #94a3b8;">No agricultural logs recorded yet. Add a record above.</td></tr>';
+        updateAgriKPIs(0, 0, 0);
+        return;
+    }
 
     agriRecords.forEach(item => {
         const amt = parseFloat(item.amount) || 0;
-        const qty = parseFloat(item.yield_quantity) || 0;
+        const qty = parseFloat(item.qty_units || item.yield_quantity) || 0;
 
         if (item.record_type === 'INCOME') {
             totalHarvestRevenue += amt;
@@ -61,50 +78,57 @@ function renderAgriDashboard() {
             totalFarmExpense += amt;
         }
 
-        const isIncome = item.record_type === 'INCOME';
-        const badgeClass = isIncome ? 'pill-income' : 'pill-expense';
-        const colorStyle = isIncome ? 'color: var(--success);' : 'color: var(--danger);';
-
-        historyHtml.push(`
-            <tr>
-                <td style="white-space:nowrap;">${formatDate(item.activity_date)}</td>
-                <td><b>${item.crop_name}</b></td>
-                <td><span class="pill pill-paid" style="background: var(--accent-soft); color: var(--accent);">${item.activity_type}</span></td>
-                <td><span class="pill ${badgeClass}">${item.record_type}</span></td>
-                <td>${qty > 0 ? `${qty} ${item.yield_unit || 'Units'}` : '-'}</td>
-                <td class="text-right" style="font-weight:700; ${colorStyle}">
-                    ₹ ${formatCurrency(amt)}
-                </td>
-                <td>${item.notes || '-'}</td>
-                <td style="white-space:nowrap;">
-                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteAgriRecord('${item.id}')">🗑️</button>
-                </td>
-            </tr>
-        `);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${item.record_date || item.activity_date || '-'}</td>
+            <td><strong>${item.crop_type || item.crop_name}</strong></td>
+            <td>${item.activity_details || item.activity_type}</td>
+            <td>
+                <span class="pill ${item.record_type === 'INCOME' ? 'pill-income' : 'pill-expense'}">
+                    ${item.record_type === 'INCOME' ? '🌾 HARVEST INFLOW' : '🚜 FARM EXPENSE'}
+                </span>
+            </td>
+            <td>${qty > 0 ? qty.toFixed(2) : '-'}</td>
+            <td class="text-right" style="font-weight: 800; color: ${item.record_type === 'INCOME' ? 'var(--status-success)' : 'var(--status-danger)'};">
+                ${item.record_type === 'INCOME' ? '+' : '-'} ₹ ${formatCurrency(amt)}
+            </td>
+            <td>${item.notes || '-'}</td>
+            <td class="text-center">
+                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteAgriRecord('${item.id}')">🗑️ Delete</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
 
-    const netFarmYield = totalHarvestRevenue - totalFarmExpense;
-
-    const kpiRevenueEl = document.getElementById('kpiAgriRevenue');
-    const kpiExpenseEl = document.getElementById('kpiAgriExpense');
-    const kpiNetEl = document.getElementById('kpiAgriNet');
-
-    if (kpiRevenueEl) kpiRevenueEl.innerText = "₹ " + formatCurrency(totalHarvestRevenue);
-    if (kpiExpenseEl) kpiExpenseEl.innerText = "₹ " + formatCurrency(totalFarmExpense);
-    if (kpiNetEl) {
-        kpiNetEl.innerText = "₹ " + formatCurrency(netFarmYield);
-        kpiNetEl.style.color = netFarmYield >= 0 ? 'var(--success)' : 'var(--danger)';
-    }
-
-    const tableEl = document.getElementById('agriLogTable');
-    if (tableEl) {
-        tableEl.innerHTML = historyHtml.length > 0 ? historyHtml.join('') : '<tr><td colspan="8" class="text-center" style="color: var(--text-muted);">No agriculture logs recorded yet.</td></tr>';
-    }
+    updateAgriKPIs(totalHarvestRevenue, totalFarmExpense, totalYieldCount);
 }
 
+function updateAgriKPIs(revenue, expense, yieldCount) {
+    const kpiRev = document.getElementById('agriTotalRevenue');
+    const kpiExp = document.getElementById('agriTotalExpense');
+    const kpiNet = document.getElementById('agriNetProfit');
+    const kpiYield = document.getElementById('agriTotalYield');
+
+    const netProfit = revenue - expense;
+
+    if (kpiRev) kpiRev.innerText = "₹ " + formatCurrency(revenue);
+    if (kpiExp) kpiExp.innerText = "₹ " + formatCurrency(expense);
+    if (kpiNet) {
+        kpiNet.innerText = "₹ " + formatCurrency(netProfit);
+        kpiNet.style.color = netProfit >= 0 ? 'var(--status-success)' : 'var(--status-danger)';
+    }
+    if (kpiYield) kpiYield.innerText = `${yieldCount.toFixed(0)} Units`;
+}
+
+// Modal Control
 function openAddAgriModal() {
     const modal = document.getElementById('agriModal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('agriDate');
+        if (dateInput && !dateInput.value) dateInput.value = today;
+        modal.style.display = 'flex';
+    }
 }
 
 function closeAddAgriModal() {
@@ -112,67 +136,41 @@ function closeAddAgriModal() {
     if (modal) modal.style.display = 'none';
 }
 
-// Save Agriculture Log to Server
+// Submit Agriculture Form
 async function saveAgriRecord(event) {
     event.preventDefault();
-    const saveBtn = document.getElementById('saveAgriBtn');
-    if (saveBtn) saveBtn.disabled = true;
 
-    const date = document.getElementById('agriDate').value || new Date().toISOString().split('T')[0];
-    const crop = document.getElementById('agriCrop').value.trim();
-    const activity = document.getElementById('agriActivity').value.trim();
-    const type = document.getElementById('agriRecordType').value;
-    const amount = parseFloat(document.getElementById('agriAmount').value) || 0;
-    const qty = parseFloat(document.getElementById('agriYieldQty').value) || 0;
-    const unit = document.getElementById('agriYieldUnit').value.trim();
-    const notes = document.getElementById('agriNotes').value.trim();
-
-    if (!crop || !activity || amount <= 0) {
-        alert("Please fill in Crop Name, Activity Type, and Amount.");
-        if (saveBtn) saveBtn.disabled = false;
-        return;
-    }
-
-    const newRecord = {
-        activity_date: date,
-        crop_name: crop,
-        activity_type: activity,
-        record_type: type,
-        amount: amount,
-        yield_quantity: qty,
-        yield_unit: unit || 'Kg',
-        notes: notes
+    const payload = {
+        record_date: document.getElementById('agriDate').value,
+        crop_type: document.getElementById('agriCrop').value,
+        activity_details: document.getElementById('agriActivity').value,
+        record_type: document.getElementById('agriRecordType').value,
+        qty_units: parseFloat(document.getElementById('agriYieldQty').value) || 0,
+        amount: parseFloat(document.getElementById('agriAmount').value) || 0
     };
 
     try {
         await apiFetch('/api/agriculture/records', {
             method: 'POST',
-            body: JSON.stringify(newRecord)
+            body: JSON.stringify(payload)
         });
 
+        alert("✅ Agricultural record saved successfully!");
         closeAddAgriModal();
         document.getElementById('agriForm').reset();
-        await fetchAgriRecords();
-    } catch (err) {
-        console.error("Failed to save agriculture record to server:", err);
-        newRecord.id = 'temp-' + Date.now();
-        agriRecords.unshift(newRecord);
-        closeAddAgriModal();
-        renderAgriDashboard();
-    } finally {
-        if (saveBtn) saveBtn.disabled = false;
+        initAgriPage();
+    } catch (e) {
+        alert("Failed to save farm record: " + e.message);
     }
 }
 
-// Delete Agriculture Record from Database
+// Delete Agriculture Record
 async function deleteAgriRecord(id) {
-    if (!confirm("Are you sure you want to delete this farm record?")) return;
+    if (!confirm("Are you sure you want to delete this agriculture entry?")) return;
     try {
         await apiFetch(`/api/agriculture/records/${id}`, { method: 'DELETE' });
-        await fetchAgriRecords();
-    } catch (err) {
-        console.error("Failed to delete agriculture record:", err);
-        agriRecords = agriRecords.filter(a => a.id !== id);
-        renderAgriDashboard();
+        fetchAgriRecords();
+    } catch (e) {
+        alert("Failed to delete entry: " + e.message);
     }
 }
