@@ -3,21 +3,23 @@
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if on protected page
     const isLoginPage = document.getElementById('loginPage');
     const token = localStorage.getItem('enterprise_token');
 
+    // If on login page, ALWAYS clear previous session so user MUST enter password every time!
+    if (isLoginPage) {
+        localStorage.removeItem('enterprise_token');
+        localStorage.removeItem('enterprise_user');
+        return;
+    }
+
+    // On protected pages (dashboard, petrol, shop, business, agri, home), redirect to login if no token
     if (!isLoginPage && !token) {
         window.location.href = 'index.html';
         return;
     }
 
-    if (isLoginPage && token) {
-        window.location.href = 'dashboard.html';
-        return;
-    }
-
-    // Set current user & date
+    // Set current user & date display
     const userDisplay = document.getElementById('currentUserDisplay');
     const dateDisplay = document.getElementById('currentDateNav');
 
