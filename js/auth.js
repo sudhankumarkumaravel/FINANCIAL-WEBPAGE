@@ -1,19 +1,23 @@
 // ============================================================
-// AUTHENTICATION & ROUTE GUARD CONTROLLER
+// AUTHENTICATION & ROUTE GUARD CONTROLLER (STRICT SESSION ONLY)
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    const isLoginPage = document.getElementById('loginPage');
-    const token = localStorage.getItem('enterprise_token');
+    // Purge legacy persistent localStorage tokens if present
+    localStorage.removeItem('enterprise_token');
+    localStorage.removeItem('enterprise_user');
 
-    // If on login page, ALWAYS clear previous session so user MUST enter password every time!
+    const isLoginPage = document.getElementById('loginPage');
+    const token = sessionStorage.getItem('enterprise_token');
+
+    // If on login page, ALWAYS clear session storage so user MUST enter password!
     if (isLoginPage) {
-        localStorage.removeItem('enterprise_token');
-        localStorage.removeItem('enterprise_user');
+        sessionStorage.removeItem('enterprise_token');
+        sessionStorage.removeItem('enterprise_user');
         return;
     }
 
-    // On protected pages (dashboard, petrol, shop, business, agri, home), redirect to login if no token
+    // On protected pages (dashboard, petrol, shop, business, agri, home), redirect to login if no active session
     if (!isLoginPage && !token) {
         window.location.href = 'index.html';
         return;
@@ -24,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateDisplay = document.getElementById('currentDateNav');
 
     if (userDisplay) {
-        const user = JSON.parse(localStorage.getItem('enterprise_user') || '{"username":"sudhankumar"}');
+        const user = JSON.parse(sessionStorage.getItem('enterprise_user') || '{"username":"sudhankumar"}');
         userDisplay.innerText = `👤 ${user.username}`;
     }
 
@@ -40,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Strict Login Handler - Password MUST match "sudhan@2008@"
+// Tokens are saved ONLY in sessionStorage so closing the tab or browser automatically logs out!
 async function performLogin(event) {
     event.preventDefault();
     const usernameInput = (document.getElementById('usernameInput')?.value || 'sudhankumar').trim();
@@ -66,8 +71,8 @@ async function performLogin(event) {
         });
 
         if (data && data.success) {
-            localStorage.setItem('enterprise_token', data.token || 'enterprise-session-token-xyz');
-            localStorage.setItem('enterprise_user', JSON.stringify(data.user || { username: 'sudhankumar', role: 'Administrator' }));
+            sessionStorage.setItem('enterprise_token', data.token || 'enterprise-session-token-xyz');
+            sessionStorage.setItem('enterprise_user', JSON.stringify(data.user || { username: 'sudhankumar', role: 'Administrator' }));
             window.location.href = 'dashboard.html';
         } else {
             showLoginError("❌ Incorrect password. Access denied.");
@@ -75,8 +80,8 @@ async function performLogin(event) {
     } catch (err) {
         console.warn("API Login network exception, checking offline credentials...", err);
         if (passwordInput === 'sudhan@2008@') {
-            localStorage.setItem('enterprise_token', 'offline-token-12345');
-            localStorage.setItem('enterprise_user', JSON.stringify({ username: 'sudhankumar', role: 'Administrator' }));
+            sessionStorage.setItem('enterprise_token', 'offline-token-12345');
+            sessionStorage.setItem('enterprise_user', JSON.stringify({ username: 'sudhankumar', role: 'Administrator' }));
             window.location.href = 'dashboard.html';
         } else {
             showLoginError("❌ Incorrect password. Access denied.");
@@ -97,6 +102,8 @@ function showLoginError(msg) {
 // Logout Handler
 function performLogout() {
     if (confirm("Are you sure you want to sign out of EnterpriseOS?")) {
+        sessionStorage.removeItem('enterprise_token');
+        sessionStorage.removeItem('enterprise_user');
         localStorage.removeItem('enterprise_token');
         localStorage.removeItem('enterprise_user');
         window.location.href = 'index.html';
