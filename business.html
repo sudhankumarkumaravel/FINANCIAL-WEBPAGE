@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Business Weighbridge Freight Trade, Net Weight Calculator & Monthly Profit Analytics">
+    <title>Business Cashflow | Enterprise Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body id="businessPage">
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                🏢 <span>EnterpriseOS</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Master Command</a></li>
+                <li><a href="petrol-bunk.html">⛽ Petrol Bunk</a></li>
+                <li><a href="shop-rent.html">🏬 Shop Rent</a></li>
+                <li><a href="business.html" class="active">💼 Business Ledger</a></li>
+                <li><a href="agriculture.html">🌾 Agriculture</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-danger btn-block" onclick="performLogout()">
+                    🚪 Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-title">
+                    <span>💼 Weighbridge Freight Trade & Monthly Profit Command</span>
+                    <span style="font-size: 12px; font-weight: 600; background: var(--status-success-bg); color: var(--status-success); border: 1px solid var(--status-success-border); padding: 4px 14px; border-radius: 20px; margin-left: 12px; display: inline-flex; align-items: center;">
+                        <span class="pulse-beacon"></span>Live Database Connected
+                    </span>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-badge" id="currentDateNav"></div>
+                    <div class="user-badge" id="currentUserDisplay">👤 Admin</div>
+                </div>
+            </header>
+
+            <!-- Workspace Content -->
+            <div class="app-content">
+
+                <!-- KPI METRIC CARDS -->
+                <div class="kpi-grid">
+                    <div class="kpi-card business">
+                        <div class="kpi-title">Monthly Net Profit</div>
+                        <div class="kpi-value" id="kpiMonthlyProfit" style="color: var(--mod-business);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiMonthlyProfitSub">Current Month Trades</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 85%; background: var(--mod-business);"></div></div>
+                    </div>
+
+                    <div class="kpi-card shop">
+                        <div class="kpi-title">Monthly Tonnage Handled</div>
+                        <div class="kpi-value" id="kpiMonthlyTons" style="color: var(--mod-shop);">0.00 Tons</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiTotalTradesCount">0 Total Trips Logged</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 75%; background: var(--mod-shop);"></div></div>
+                    </div>
+
+                    <div class="kpi-card agri">
+                        <div class="kpi-title">Supplier Pending Payables</div>
+                        <div class="kpi-value" id="kpiSupplierPending" style="color: var(--status-danger);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiSupplierUnpaidCount">0 Unpaid Suppliers</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 60%; background: var(--status-danger);"></div></div>
+                    </div>
+
+                    <div class="kpi-card petrol">
+                        <div class="kpi-title">Company Receivables</div>
+                        <div class="kpi-value" id="kpiCompanyReceivables" style="color: var(--mod-petrol);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiCompanyPendingCount">0 Pending Receivables</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 70%; background: var(--mod-petrol);"></div></div>
+                    </div>
+                </div>
+
+                <!-- WEIGHBRIDGE FREIGHT TRADE ENTRY FORM -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>🚛 New Weighbridge Freight & Material Entry</span>
+                        <span style="font-size: 13px; font-weight: 500; color: #94a3b8;">Auto Net Weight, Buy/Sell Rates & Profit</span>
+                    </h2>
+
+                    <form id="businessTradeForm" onsubmit="handleTradeSubmit(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="txDateInput">Date</label>
+                                <input type="date" id="txDateInput" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="vehicleNumberInput">Vehicle Registration No.</label>
+                                <input type="text" id="vehicleNumberInput" class="form-control uppercase-input" placeholder="e.g. TN-38-AB-1234" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierNameInput">Supplier / Quarry Name (Buy From)</label>
+                                <input type="text" id="supplierNameInput" class="form-control" placeholder="e.g. Sri Ram Blue Metal" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="companyNameInput">Company / Buyer Name (Sell To)</label>
+                                <input type="text" id="companyNameInput" class="form-control" placeholder="e.g. L&T Infrastructure Corp" required>
+                            </div>
+                        </div>
+
+                        <!-- WEIGHBRIDGE WEIGHT CALCULATOR -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="emptyWeightInput">Empty Truck Weight (Tons)</label>
+                                <input type="number" step="0.01" id="emptyWeightInput" class="form-control" placeholder="e.g. 10.50" oninput="calculateLiveTrade()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="totalWeightInput">Total Gross Weight (Tons)</label>
+                                <input type="number" step="0.01" id="totalWeightInput" class="form-control" placeholder="e.g. 35.50" oninput="calculateLiveTrade()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="netWeightDisplay">Auto Net Weight (Tons)</label>
+                                <input type="text" id="netWeightDisplay" class="form-control form-control-readonly" readonly value="0.00 Tons">
+                            </div>
+                        </div>
+
+                        <!-- RATES PER TON -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="buyRateInput">Supplier Buy Rate per Ton (₹/Ton)</label>
+                                <input type="number" step="0.01" id="buyRateInput" class="form-control" placeholder="e.g. 4200" oninput="calculateLiveTrade()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="sellRateInput">Company Sell Rate per Ton (₹/Ton)</label>
+                                <input type="number" step="0.01" id="sellRateInput" class="form-control" placeholder="e.g. 5100" oninput="calculateLiveTrade()" required>
+                            </div>
+                        </div>
+
+                        <!-- PAYMENT STATUS TOGGLES -->
+                        <div class="form-row" style="margin-bottom: 20px;">
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="supplierPaidCheckbox" style="width: 20px; height: 20px; cursor: pointer;">
+                                <label for="supplierPaidCheckbox" style="cursor: pointer; margin: 0; font-size: 14px; text-transform: none; color: #fff;">
+                                    Payment to Supplier Given? (Mark as <strong>PAID</strong>)
+                                </label>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="companyPaidCheckbox" style="width: 20px; height: 20px; cursor: pointer;">
+                                <label for="companyPaidCheckbox" style="cursor: pointer; margin: 0; font-size: 14px; text-transform: none; color: #fff;">
+                                    Amount Received from Company? (Mark as <strong>PAID</strong>)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- LIVE MATH FINANCIAL SUMMARY WIDGET -->
+                        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-glass-light); border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                            <div>
+                                <div style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Amount Given by Company (Buyer)</div>
+                                <div id="previewCompanyAmt" style="font-size: 22px; font-weight: 800; color: var(--mod-shop); font-family: 'Outfit', sans-serif;">₹ 0.00</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Amount Need to Give to Supplier</div>
+                                <div id="previewSupplierAmt" style="font-size: 22px; font-weight: 800; color: var(--status-danger); font-family: 'Outfit', sans-serif;">₹ 0.00</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; text-transform: uppercase; color: var(--status-success); font-weight: 700;">Net Trade Profit</div>
+                                <div id="previewProfit" style="font-size: 24px; font-weight: 800; color: var(--status-success); font-family: 'Outfit', sans-serif;">₹ 0.00</div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-accent btn-block">
+                            💾 Save Weighbridge Entry & Record Profit
+                        </button>
+                    </form>
+                </div>
+
+                <!-- WEIGHBRIDGE FREIGHT TRADES LEDGER TABLE -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>📜 Weighbridge Freight Trade Ledger</span>
+                        <button class="btn btn-secondary" onclick="loadBusinessTradesLedger()">🔄 Refresh Ledger</button>
+                    </h2>
+
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Vehicle No.</th>
+                                    <th>Supplier (Payment)</th>
+                                    <th>Company (Receipt)</th>
+                                    <th>Net Weight</th>
+                                    <th>Buy / Sell Rate</th>
+                                    <th>Amount to Supplier</th>
+                                    <th>Amount from Company</th>
+                                    <th>Net Profit</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="businessTradesTableBody">
+                                <tr>
+                                    <td colspan="10" class="text-center" style="padding: 24px; color: #94a3b8;">Loading weighbridge trades...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/business.js"></script>
+</body>
+</html>

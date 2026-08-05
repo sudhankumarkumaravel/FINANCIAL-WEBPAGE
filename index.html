@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Enterprise Management System Login Portal">
+    <title>Login | Enterprise Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            background: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.25) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.25) 0px, transparent 50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: var(--radius-lg);
+            padding: 48px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(56, 189, 248, 0.15);
+            border: 1px solid var(--border-glass-light);
+            text-align: center;
+            position: relative;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            border-top-left-radius: var(--radius-lg);
+            border-top-right-radius: var(--radius-lg);
+        }
+
+        .login-brand {
+            font-family: 'Outfit', sans-serif;
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--text-white);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .login-brand span {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 32px;
+            font-weight: 500;
+        }
+
+        .error-box {
+            color: var(--status-danger);
+            background: var(--status-danger-bg);
+            border: 1px solid var(--status-danger-border);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="login-brand">
+            🏢 <span>EnterpriseOS</span>
+        </div>
+        <p class="login-subtitle">Sign in to access your futuristic management portal</p>
+
+        <div id="loginError" class="error-box">Invalid username or password.</div>
+
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+            <div class="form-group" style="text-align: left;">
+                <label for="username">Username</label>
+                <input type="text" id="username" class="form-control" placeholder="e.g. sudhankumar" autocomplete="off" required>
+            </div>
+            <div class="form-group" style="text-align: left;">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            
+            <button type="submit" class="btn btn-accent btn-block" style="margin-top: 16px; height: 50px; font-size: 15px;">
+                Sign In →
+            </button>
+        </form>
+        
+        <p style="margin-top: 28px; font-size: 12px; color: var(--text-muted);">
+            Enterprise Management System &copy; 2026. All rights reserved.
+        </p>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        function handleLoginSubmit(event) {
+            event.preventDefault();
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+            const errBox = document.getElementById("loginError");
+
+            const res = performLogin(user, pass);
+            if (res.success) {
+                window.location.href = "dashboard.html";
+            } else {
+                errBox.innerText = res.message;
+                errBox.style.display = "block";
+            }
+        }
+    </script>
+</body>
+</html>

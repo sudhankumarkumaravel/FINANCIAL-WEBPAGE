@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Agriculture & Farm Operations Crop Harvest Analytics">
+    <title>Agriculture | Enterprise Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body id="agriculturePage">
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                🌾 <span>AgriOS</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">⬅️ Back to Master</a></li>
+                <li><a href="petrol-bunk.html">⛽ Petrol Bunk</a></li>
+                <li><a href="shop-rent.html">🏬 Shop Rent</a></li>
+                <li><a href="business.html">💼 Business Ledger</a></li>
+                <li><a href="agriculture.html" class="active">🌾 Agriculture Logs</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-danger btn-block" onclick="performLogout()">
+                    🚪 Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-title">
+                    <span>Agriculture & Farm Operations Ledger</span>
+                    <span style="font-size: 12px; font-weight: 600; background: var(--status-success-bg); color: var(--status-success); border: 1px solid var(--status-success-border); padding: 5px 14px; border-radius: 20px; margin-left: 12px; display: inline-flex; align-items: center;">
+                        <span class="pulse-beacon"></span>Live DB Sync
+                    </span>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-badge" id="currentDateNav"></div>
+                    <div class="user-badge" id="currentUserDisplay">👤 Admin</div>
+                </div>
+            </header>
+
+            <!-- Workspace Content -->
+            <div class="app-content">
+                <!-- Overview KPIs -->
+                <div class="kpi-grid">
+                    <div class="kpi-card agri">
+                        <div class="kpi-title">Harvest Sales Revenue</div>
+                        <div class="kpi-value" id="kpiAgriRevenue" style="color: var(--status-success);">₹ 0.00</div>
+                    </div>
+                    <div class="kpi-card agri">
+                        <div class="kpi-title">Farm Expenditures</div>
+                        <div class="kpi-value" id="kpiAgriExpense" style="color: var(--status-danger);">₹ 0.00</div>
+                    </div>
+                    <div class="kpi-card agri">
+                        <div class="kpi-title">Net Farm Return</div>
+                        <div class="kpi-value" id="kpiAgriNet">₹ 0.00</div>
+                    </div>
+                </div>
+
+                <!-- Agriculture Log Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <span>Crop Harvest & Farm Activity Logs</span>
+                        <button class="btn btn-accent" onclick="openAddAgriModal()">
+                            ➕ Log Farm Activity
+                        </button>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Crop Name</th>
+                                    <th>Activity Type</th>
+                                    <th>Type</th>
+                                    <th>Yield Qty</th>
+                                    <th class="text-right">Amount (₹)</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agriLogTable">
+                                <tr><td colspan="8" class="text-center" style="color: var(--text-muted);">Loading farm logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ADD AGRI RECORD MODAL -->
+    <div class="modal-overlay" id="agriModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Log Farm Activity / Harvest</h3>
+                <button class="modal-close" onclick="closeAddAgriModal()">&times;</button>
+            </div>
+            <form id="agriForm" onsubmit="saveAgriRecord(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="agriDate">Date</label>
+                        <input type="date" id="agriDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="agriRecordType">Type</label>
+                        <select id="agriRecordType" class="form-control">
+                            <option value="INCOME">HARVEST REVENUE (+)</option>
+                            <option value="EXPENSE">FARM EXPENSE (-)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="agriCrop">Crop Name</label>
+                        <input type="text" id="agriCrop" class="form-control" placeholder="Coconut, Paddy, Sugarcane" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="agriActivity">Activity Type</label>
+                        <input type="text" id="agriActivity" class="form-control" placeholder="Harvest, Fertilizer, Labor, Seeds" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="agriYieldQty">Yield Quantity</label>
+                        <input type="number" id="agriYieldQty" class="form-control" step="0.01" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="agriYieldUnit">Yield Unit</label>
+                        <input type="text" id="agriYieldUnit" class="form-control" placeholder="Nuts, Kg, Tons, Bags">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="agriAmount">Total Amount (₹)</label>
+                    <input type="number" id="agriAmount" class="form-control" step="0.01" placeholder="10000.00" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="agriNotes">Activity Notes</label>
+                    <textarea id="agriNotes" class="form-control" rows="2" placeholder="Field details, market prices, or labor notes"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 14px; margin-top: 24px;">
+                    <button type="button" class="btn btn-secondary btn-block" onclick="closeAddAgriModal()">Cancel</button>
+                    <button type="submit" class="btn btn-accent btn-block" id="saveAgriBtn">Save Farm Log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/agriculture.js"></script>
+</body>
+</html>

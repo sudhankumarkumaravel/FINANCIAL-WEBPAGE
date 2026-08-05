@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Shop Rent Management, Monthly Payment Date Tracking, Tenant Directory & Rent Calculator">
+    <title>Shop Rent Ledger | Enterprise Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body id="shopRentPage">
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                🏢 <span>EnterpriseOS</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Master Command</a></li>
+                <li><a href="petrol-bunk.html">⛽ Petrol Bunk</a></li>
+                <li><a href="shop-rent.html" class="active">🏬 Shop Rent</a></li>
+                <li><a href="business.html">💼 Business Ledger</a></li>
+                <li><a href="agriculture.html">🌾 Agriculture</a></li>
+                <li><a href="home.html">🏡 Home / Family</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-danger btn-block" onclick="performLogout()">
+                    🚪 Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-title">
+                    <span>🏬 Shop Rent Ledger & Commercial Tenant Management</span>
+                    <span style="font-size: 12px; font-weight: 600; background: var(--status-success-bg); color: var(--status-success); border: 1px solid var(--status-success-border); padding: 4px 14px; border-radius: 20px; margin-left: 12px; display: inline-flex; align-items: center;">
+                        <span class="pulse-beacon"></span>Live Database Connected
+                    </span>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-badge" id="currentDateNav"></div>
+                    <div class="user-badge" id="currentUserDisplay">👤 Admin</div>
+                </div>
+            </header>
+
+            <!-- Workspace Content -->
+            <div class="app-content">
+
+                <!-- KPI METRIC CARDS -->
+                <div class="kpi-grid">
+                    <div class="kpi-card shop">
+                        <div class="kpi-title">Selected Month Rent Collected</div>
+                        <div class="kpi-value" id="kpiShopRentCollected" style="color: var(--mod-shop);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiSelectedMonthLabel">Month: 2026-08</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 85%; background: var(--mod-shop);"></div></div>
+                    </div>
+
+                    <div class="kpi-card agri">
+                        <div class="kpi-title">Pending Unpaid Rent</div>
+                        <div class="kpi-value" id="kpiShopRentPending" style="color: var(--status-danger);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiPendingTenantsCount">0 Unpaid Tenants</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 40%; background: var(--status-danger);"></div></div>
+                    </div>
+
+                    <div class="kpi-card business">
+                        <div class="kpi-title">Paid Tenants / Occupancy</div>
+                        <div class="kpi-value" id="kpiPaidTenantsRatio" style="color: var(--status-success);">0 / 0 Paid</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiTotalTenantsCount">0 Active Tenants</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 90%; background: var(--status-success);"></div></div>
+                    </div>
+
+                    <div class="kpi-card petrol">
+                        <div class="kpi-title">Monthly Collection Rate</div>
+                        <div class="kpi-value" id="kpiCollectionRate" style="color: var(--mod-petrol);">0%</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Rent Collection Efficiency</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" id="kpiCollectionMeter" style="width: 75%; background: var(--mod-petrol);"></div></div>
+                    </div>
+                </div>
+
+                <!-- MONTHLY RENT PAYMENT LOGGER FORM -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>💳 Record Monthly Rent Payment</span>
+                        <button class="btn btn-secondary" onclick="openAddTenantModal()">➕ Add New Tenant</button>
+                    </h2>
+
+                    <form id="rentPaymentForm" onsubmit="handleRentPaymentSubmit(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rentPaymentDateInput">Payment Date</label>
+                                <input type="date" id="rentPaymentDateInput" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="rentMonthSelect">Rent Month</label>
+                                <input type="month" id="rentMonthSelect" class="form-control" onchange="loadRentPaymentsLedger()" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tenantSelectDropdown">Select Tenant</label>
+                                <select id="tenantSelectDropdown" class="form-control" onchange="onTenantSelectChange()" required>
+                                    <option value="">-- Select Tenant --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="rentShopNoInput">Shop Number</label>
+                                <input type="text" id="rentShopNoInput" class="form-control" readonly placeholder="Auto-filled">
+                            </div>
+                            <div class="form-group">
+                                <label for="rentAmountInput">Monthly Rent Amount (₹)</label>
+                                <input type="number" step="0.01" id="rentAmountInput" class="form-control" placeholder="0.00" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="paymentStatusSelect">Payment Status</label>
+                                <select id="paymentStatusSelect" class="form-control">
+                                    <option value="1">✓ PAID (Received In Full)</option>
+                                    <option value="0">⏳ PENDING (Not Received)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-accent btn-block">
+                            💾 Mark Rent as PAID for Month & Record Payment
+                        </button>
+                    </form>
+                </div>
+
+                <!-- MONTHLY RENT LEDGER TABLE -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>📜 Monthly Rent Payment Ledger & History</span>
+                        <button class="btn btn-secondary" onclick="loadRentPaymentsLedger()">🔄 Refresh Ledger</button>
+                    </h2>
+
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Payment Date</th>
+                                    <th>Tenant Name</th>
+                                    <th>Shop No.</th>
+                                    <th>Rent Month</th>
+                                    <th>Monthly Rent</th>
+                                    <th>Payment Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shopRentTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center" style="padding: 24px; color: #94a3b8;">Loading rent payments ledger...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TENANTS MASTER DIRECTORY TABLE (DELETE & MANAGE TENANTS) -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>👥 Commercial Tenants Master Directory</span>
+                        <button class="btn btn-accent" onclick="openAddTenantModal()">➕ Add Tenant</button>
+                    </h2>
+
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Shop No.</th>
+                                    <th>Tenant / Business Name</th>
+                                    <th>Aadhaar Number</th>
+                                    <th>Contact Phone</th>
+                                    <th>Monthly Rent Rate</th>
+                                    <th class="text-center">Delete Option</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tenantsDirectoryTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center" style="padding: 24px; color: #94a3b8;">Loading commercial tenants directory...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ADD TENANT MODAL -->
+    <div id="addTenantModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Add New Commercial Tenant</h3>
+                <button class="modal-close" onclick="closeAddTenantModal()">×</button>
+            </div>
+            <form id="addTenantForm" onsubmit="handleAddTenantSubmit(event)">
+                <div class="form-group">
+                    <label for="modalTenantName">Tenant / Business Name</label>
+                    <input type="text" id="modalTenantName" class="form-control" placeholder="e.g. Venkatesh Stores" required>
+                </div>
+                <div class="form-group">
+                    <label for="modalShopNumber">Shop Number</label>
+                    <input type="text" id="modalShopNumber" class="form-control" placeholder="e.g. Shop G-01" required>
+                </div>
+                <div class="form-group">
+                    <label for="modalAadhaar">Aadhaar Number</label>
+                    <input type="text" id="modalAadhaar" class="form-control" placeholder="12-digit Aadhaar">
+                </div>
+                <div class="form-group">
+                    <label for="modalPhone">Contact Phone</label>
+                    <input type="text" id="modalPhone" class="form-control" placeholder="+91 Phone">
+                </div>
+                <div class="form-group">
+                    <label for="modalRent">Monthly Rent Amount (₹)</label>
+                    <input type="number" step="0.01" id="modalRent" class="form-control" placeholder="e.g. 18500" required>
+                </div>
+                <button type="submit" class="btn btn-accent btn-block" style="margin-top: 20px;">
+                    💾 Save Tenant Record
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/shop-rent.js"></script>
+</body>
+</html>

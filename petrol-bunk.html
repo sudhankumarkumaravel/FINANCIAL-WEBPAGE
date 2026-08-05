@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Petrol Bunk Credit Slips, Daily Volume Sales, State Fuel Prices & Profit Analytics">
+    <title>Petrol Bunk Command | Enterprise Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body id="petrolBunkPage">
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                🏢 <span>EnterpriseOS</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Master Command</a></li>
+                <li><a href="petrol-bunk.html" class="active">⛽ Petrol Bunk</a></li>
+                <li><a href="shop-rent.html">🏬 Shop Rent</a></li>
+                <li><a href="business.html">💼 Business Ledger</a></li>
+                <li><a href="agriculture.html">🌾 Agriculture</a></li>
+                <li><a href="home.html">🏡 Home / Family</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-danger btn-block" onclick="performLogout()">
+                    🚪 Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-title">
+                    <span>⛽ Petrol Bunk Operations & Daily Profit Analytics</span>
+                    <span style="font-size: 12px; font-weight: 600; background: var(--status-success-bg); color: var(--status-success); border: 1px solid var(--status-success-border); padding: 4px 14px; border-radius: 20px; margin-left: 12px; display: inline-flex; align-items: center;">
+                        <span class="pulse-beacon"></span>Live Database Connected
+                    </span>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-badge" id="currentDateNav"></div>
+                    <div class="user-badge" id="currentUserDisplay">👤 Admin</div>
+                </div>
+            </header>
+
+            <!-- Workspace Content -->
+            <div class="app-content">
+
+                <!-- KPI METRIC CARDS -->
+                <div class="kpi-grid">
+                    <div class="kpi-card petrol">
+                        <div class="kpi-title">Today's Liters Sold</div>
+                        <div class="kpi-value" id="kpiTotalLiters" style="color: var(--mod-petrol);">0.00 L</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiLitersBreakdown">Petrol: 0L | Diesel: 0L</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 75%; background: var(--mod-petrol);"></div></div>
+                    </div>
+
+                    <div class="kpi-card shop">
+                        <div class="kpi-title">State Fuel Rates (<span id="kpiStateName">Tamil Nadu</span>)</div>
+                        <div class="kpi-value" id="kpiStateRates" style="color: var(--mod-shop);">₹ 100.75 / L</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiStateDiesel">Diesel: ₹ 92.34 / L</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 85%; background: var(--mod-shop);"></div></div>
+                    </div>
+
+                    <div class="kpi-card business">
+                        <div class="kpi-title">Today's Net Profit</div>
+                        <div class="kpi-value" id="kpiTodayProfit" style="color: var(--mod-business);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiTotalProfitCumulative">Cumulative: ₹ 0.00</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 90%; background: var(--mod-business);"></div></div>
+                    </div>
+
+                    <div class="kpi-card agri">
+                        <div class="kpi-title">Unpaid Credit Slips</div>
+                        <div class="kpi-value" id="kpiUnpaidCredit" style="color: var(--status-danger);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiUnpaidCount">0 Pending Slips</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 50%; background: var(--status-danger);"></div></div>
+                    </div>
+                </div>
+
+                <!-- SECTION 1: DAILY FUEL VOLUME SALES & STATE PRICE PROFIT CALCULATOR -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>📊 Daily Fuel Volume Sales & Profit Logger</span>
+                        <span style="font-size: 13px; font-weight: 500; color: #94a3b8;">Record Liters Sold & State Pricing</span>
+                    </h2>
+
+                    <form id="dailySalesForm" onsubmit="handleDailySalesSubmit(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="saleDateInput">Sale Date</label>
+                                <input type="date" id="saleDateInput" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="stateSelect">Select Indian State</label>
+                                <select id="stateSelect" class="form-control" onchange="onStateSelectChange()">
+                                    <option value="Tamil Nadu">Tamil Nadu (Chennai)</option>
+                                    <option value="Karnataka">Karnataka (Bengaluru)</option>
+                                    <option value="Maharashtra">Maharashtra (Mumbai)</option>
+                                    <option value="Delhi">Delhi (NCR)</option>
+                                    <option value="Kerala">Kerala (Thiruvananthapuram)</option>
+                                    <option value="Telangana">Telangana (Hyderabad)</option>
+                                    <option value="Andhra Pradesh">Andhra Pradesh (Vijayawada)</option>
+                                    <option value="West Bengal">West Bengal (Kolkata)</option>
+                                    <option value="Gujarat">Gujarat (Ahmedabad)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="petrolPriceInput">Petrol Selling Price (₹/L)</label>
+                                <input type="number" step="0.01" id="petrolPriceInput" class="form-control" oninput="calculateLiveProfit()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="petrolCostInput">Petrol Dealer Cost Price (₹/L)</label>
+                                <input type="number" step="0.01" id="petrolCostInput" class="form-control" oninput="calculateLiveProfit()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="petrolLitersInput">Petrol Liters Sold Today</label>
+                                <input type="number" step="0.01" id="petrolLitersInput" class="form-control" placeholder="e.g. 1500" oninput="calculateLiveProfit()" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="dieselPriceInput">Diesel Selling Price (₹/L)</label>
+                                <input type="number" step="0.01" id="dieselPriceInput" class="form-control" oninput="calculateLiveProfit()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dieselCostInput">Diesel Dealer Cost Price (₹/L)</label>
+                                <input type="number" step="0.01" id="dieselCostInput" class="form-control" oninput="calculateLiveProfit()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dieselLitersInput">Diesel Liters Sold Today</label>
+                                <input type="number" step="0.01" id="dieselLitersInput" class="form-control" placeholder="e.g. 3000" oninput="calculateLiveProfit()" required>
+                            </div>
+                        </div>
+
+                        <!-- LIVE PROFIT PREVIEW BAR -->
+                        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: 18px 24px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 12px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Calculated Daily Revenue</div>
+                                <div id="previewRevenue" style="font-size: 24px; font-weight: 800; color: #ffffff; font-family: 'Outfit', sans-serif;">₹ 0.00</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 12px; text-transform: uppercase; color: var(--status-success); font-weight: 700;">Estimated Dealer Net Profit</div>
+                                <div id="previewProfit" style="font-size: 28px; font-weight: 800; color: var(--status-success); font-family: 'Outfit', sans-serif;">₹ 0.00</div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-accent btn-block">
+                            💾 Save Daily Sales & Record Net Profit
+                        </button>
+                    </form>
+                </div>
+
+                <!-- DAILY SALES HISTORY TABLE -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>📈 Daily Fuel Volume Sales & Profit Log</span>
+                        <button class="btn btn-secondary" onclick="loadDailySalesLog()">🔄 Refresh Logs</button>
+                    </h2>
+
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>State</th>
+                                    <th>Petrol Sold</th>
+                                    <th>Diesel Sold</th>
+                                    <th>Total Revenue</th>
+                                    <th>Dealer Net Profit</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dailySalesTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center" style="padding: 24px; color: #94a3b8;">Loading sales logs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: CREDIT SLIP ENTRY & LEDGER -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>📝 Generate Fuel Credit Slip</span>
+                        <span style="font-size: 13px; font-weight: 500; color: #94a3b8;">Client A/R Receipts & Slip Printing</span>
+                    </h2>
+
+                    <form id="petrolSlipForm" onsubmit="handleSlipSubmit(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="slipDate">Date</label>
+                                <input type="date" id="slipDate" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="customerName">Customer / Transporter Name</label>
+                                <input type="text" id="customerName" class="form-control" placeholder="e.g. Rajesh Kumar" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vehicleNumber">Vehicle Number</label>
+                                <input type="text" id="vehicleNumber" class="form-control uppercase-input" placeholder="e.g. TN-38-AB-1234" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="fuelType">Fuel Type</label>
+                                <select id="fuelType" class="form-control" onchange="updateSlipPriceDefault()">
+                                    <option value="PETROL">Petrol</option>
+                                    <option value="DIESEL">Diesel</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="qtyLiters">Quantity (Liters)</label>
+                                <input type="number" step="0.01" id="qtyLiters" class="form-control" placeholder="0.00" oninput="calculateSlipTotal()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ratePerLiter">Rate / Liter (₹)</label>
+                                <input type="number" step="0.01" id="ratePerLiter" class="form-control" oninput="calculateSlipTotal()" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="totalAmount">Total Slip Amount (₹)</label>
+                                <input type="text" id="totalAmount" class="form-control form-control-readonly" readonly value="₹ 0.00">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-accent btn-block">
+                            📄 Generate & Save Credit Slip
+                        </button>
+                    </form>
+                </div>
+
+                <!-- CREDIT SLIPS LEDGER TABLE -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>📜 Credit Slips Ledger & Receipts</span>
+                        <button class="btn btn-secondary" onclick="loadSlipsLedger()">🔄 Refresh Slips</button>
+                    </h2>
+
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Customer / Company</th>
+                                    <th>Vehicle No.</th>
+                                    <th>Fuel Type</th>
+                                    <th>Liters</th>
+                                    <th>Rate (₹/L)</th>
+                                    <th>Total Amount</th>
+                                    <th>Payment Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="petrolSlipsTableBody">
+                                <tr>
+                                    <td colspan="9" class="text-center" style="padding: 24px; color: #94a3b8;">Loading credit slips...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- PRINTABLE SLIP LAYOUT CONTAINER -->
+    <div id="printableSlipArea" class="printable-area"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/petrol-bunk.js"></script>
+</body>
+</html>

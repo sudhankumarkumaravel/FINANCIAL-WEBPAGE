@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Master Enterprise Portfolio Command Center">
+    <title>Master Command | Enterprise Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body id="masterDashboardPage">
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                🏢 <span>EnterpriseOS</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html" class="active">📊 Master Command</a></li>
+                <li><a href="petrol-bunk.html">⛽ Petrol Bunk</a></li>
+                <li><a href="shop-rent.html">🏬 Shop Rent</a></li>
+                <li><a href="business.html">💼 Business Ledger</a></li>
+                <li><a href="agriculture.html">🌾 Agriculture</a></li>
+                <li><a href="home.html">🏡 Home / Family</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-danger btn-block" onclick="performLogout()">
+                    🚪 Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-title">
+                    <span>Sudhankumar's Enterprise Portfolio</span>
+                    <span style="font-size: 12px; font-weight: 600; background: var(--status-success-bg); color: var(--status-success); border: 1px solid var(--status-success-border); padding: 4px 14px; border-radius: 20px; margin-left: 12px; display: inline-flex; align-items: center;">
+                        <span class="pulse-beacon"></span>Backend Connected
+                    </span>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-badge" id="currentDateNav"></div>
+                    <div class="user-badge" id="currentUserDisplay">👤 Admin</div>
+                </div>
+            </header>
+
+            <!-- Workspace Content -->
+            <div class="app-content">
+
+                <!-- MASTER OVERALL MONTHLY PROFIT & EXPENSE CALCULATOR CARD -->
+                <div class="card" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 13, 18, 0.98) 100%); border: 1px solid var(--border-glass-light); margin-bottom: 28px;">
+                    <h2 class="card-header" style="margin-bottom: 16px;">
+                        <span>💰 Master Overall Monthly Profit & Expense Analytics</span>
+                        <span style="font-size: 13px; font-weight: 500; color: #94a3b8;" id="masterMonthLabel">Consolidated All 5 Modules</span>
+                    </h2>
+
+                    <!-- 3 KPI STAT BLOCKS -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 20px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-glass);">
+                        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md); padding: 20px;">
+                            <div style="font-size: 12px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Total Consolidated Income</div>
+                            <div id="masterTotalIncome" style="font-size: 28px; font-weight: 800; color: var(--status-success); font-family: 'Outfit', sans-serif; margin-top: 6px;">₹ 0.00</div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Gross Inflow Across 5 Modules</div>
+                        </div>
+
+                        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-md); padding: 20px;">
+                            <div style="font-size: 12px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Total Consolidated Expenses</div>
+                            <div id="masterTotalExpenses" style="font-size: 28px; font-weight: 800; color: var(--status-danger); font-family: 'Outfit', sans-serif; margin-top: 6px;">₹ 0.00</div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Fuel Costs, Supplier Payables, Living</div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, rgba(130, 160, 255, 0.15) 0%, rgba(158, 247, 210, 0.15) 100%); border: 1px solid rgba(158, 247, 210, 0.4); border-radius: var(--radius-md); padding: 20px;">
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--mzaC-accent); font-weight: 800;">OVERALL NET MONTHLY PROFIT</div>
+                            <div id="masterOverallNetProfit" style="font-size: 34px; font-weight: 900; color: #ffffff; font-family: 'Outfit', sans-serif; margin-top: 6px; text-shadow: 0 0 15px var(--mzaC-accent);">₹ 0.00</div>
+                            <div style="font-size: 12px; color: var(--mzaC-accent); margin-top: 4px;" id="masterNetMarginRate">Net Profit Margin: 0%</div>
+                        </div>
+                    </div>
+
+                    <!-- 5-MODULE PROFIT CONTRIBUTION BREAKDOWN METERS -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                        <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--mod-petrol);">⛽ PETROL BUNK PROFIT</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px;" id="breakdownPetrol">₹ 0.00</div>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--mod-shop);">🏬 SHOP RENT INCOME</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px;" id="breakdownShop">₹ 0.00</div>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--mod-business);">💼 BUSINESS TRADE PROFIT</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px;" id="breakdownBusiness">₹ 0.00</div>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--mod-agri);">🌾 AGRICULTURE PROFIT</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px;" id="breakdownAgri">₹ 0.00</div>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--mod-home);">🏡 HOME SURPLUS</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px;" id="breakdownHome">₹ 0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Glassmorphic KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card petrol">
+                        <div class="kpi-title">Petrol Bunk Outstanding</div>
+                        <div class="kpi-value" id="dashPetrolKpi" style="color: var(--mod-petrol);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="dashPetrolSub">Loading live slips...</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 65%; background: var(--mod-petrol);"></div></div>
+                    </div>
+
+                    <div class="kpi-card shop">
+                        <div class="kpi-title">Shop Rent Monthly Collection</div>
+                        <div class="kpi-value" id="dashShopKpi" style="color: var(--mod-shop);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="dashShopSub">Loading live tenants...</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 85%; background: var(--mod-shop);"></div></div>
+                    </div>
+
+                    <div class="kpi-card business">
+                        <div class="kpi-title">Business Net Trade Profit</div>
+                        <div class="kpi-value" id="dashBusinessKpi" style="color: var(--mod-business);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="dashBusinessSub">Loading transactions...</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 78%; background: var(--mod-business);"></div></div>
+                    </div>
+
+                    <div class="kpi-card agri">
+                        <div class="kpi-title">Agriculture Harvest Sales</div>
+                        <div class="kpi-value" id="dashAgriKpi" style="color: var(--mod-agri);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="dashAgriSub">Loading farm logs...</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 90%; background: var(--mod-agri);"></div></div>
+                    </div>
+
+                    <div class="kpi-card home">
+                        <div class="kpi-title">Home Household Savings</div>
+                        <div class="kpi-value" id="dashHomeKpi" style="color: var(--mod-home);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="dashHomeSub">Loading household logs...</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 80%; background: var(--mod-home);"></div></div>
+                    </div>
+                </div>
+
+                <!-- 3D PARALLAX FEATURED MODULE CAROUSEL -->
+                <div class="card" style="padding: 24px 24px 12px 24px; position: relative;">
+                    <h2 class="card-header" style="margin-bottom: 12px;">
+                        <span>Interactive Enterprise Operations Deck</span>
+                        <span style="font-size: 13px; font-weight: 500; color: #94a3b8;">Drag / Swipe or click buttons to launch modules</span>
+                    </h2>
+
+                    <!-- MZA 3D CAROUSEL COMPONENT -->
+                    <div class="mzaCarousel" id="mzaCarousel" aria-roledescription="carousel" aria-label="Enterprise Modules">
+                        <div class="mzaCarousel-viewport" tabindex="0">
+                            <div class="mzaCarousel-track">
+
+                                <!-- Slide 1: Petrol Bunk -->
+                                <article class="mzaCarousel-slide" role="group" aria-roledescription="slide" aria-label="1 of 5">
+                                    <div class="mzaCard card-bg-petrol">
+                                        <header class="mzaCard-head mzaPar-1">
+                                            <h2 class="mzaCard-title">PetrolOS Command</h2>
+                                            <p class="mzaCard-kicker">Fuel & Credit Ledger</p>
+                                        </header>
+                                        <p class="mzaCard-text mzaPar-2">Generate instant credit fuel slips, track client accounts receivable balances, and print customer/office receipt slips in real time.</p>
+                                        <footer class="mzaCard-actions mzaPar-3">
+                                            <a href="petrol-bunk.html" class="mzaBtn">Launch PetrolOS →</a>
+                                        </footer>
+                                    </div>
+                                </article>
+
+                                <!-- Slide 2: Shop Rent -->
+                                <article class="mzaCarousel-slide" role="group" aria-roledescription="slide" aria-label="2 of 5">
+                                    <div class="mzaCard card-bg-shop">
+                                        <header class="mzaCard-head mzaPar-1">
+                                            <h2 class="mzaCard-title">Shop Rent Ledger</h2>
+                                            <p class="mzaCard-kicker">Commercial Property Management</p>
+                                        </header>
+                                        <p class="mzaCard-text mzaPar-2">Manage commercial property tenants, track monthly rent collections, record Aadhaar & contact info, and monitor occupancy metrics.</p>
+                                        <footer class="mzaCard-actions mzaPar-3">
+                                            <a href="shop-rent.html" class="mzaBtn">Manage Property →</a>
+                                        </footer>
+                                    </div>
+                                </article>
+
+                                <!-- Slide 3: Business -->
+                                <article class="mzaCarousel-slide" role="group" aria-roledescription="slide" aria-label="3 of 5">
+                                    <div class="mzaCard card-bg-business">
+                                        <header class="mzaCard-head mzaPar-1">
+                                            <h2 class="mzaCard-title">Business Cashflow</h2>
+                                            <p class="mzaCard-kicker">Weighbridge Freight & Trade Profit</p>
+                                        </header>
+                                        <p class="mzaCard-text mzaPar-2">Log weighbridge freight trips, auto-calculate net weight from empty/gross weights, track buy/sell rates, and monitor supplier payables & profit.</p>
+                                        <footer class="mzaCard-actions mzaPar-3">
+                                            <a href="business.html" class="mzaBtn">Open Financials →</a>
+                                        </footer>
+                                    </div>
+                                </article>
+
+                                <!-- Slide 4: Agriculture -->
+                                <article class="mzaCarousel-slide" role="group" aria-roledescription="slide" aria-label="4 of 5">
+                                    <div class="mzaCard card-bg-agri">
+                                        <header class="mzaCard-head mzaPar-1">
+                                            <h2 class="mzaCard-title">Agriculture Operations</h2>
+                                            <p class="mzaCard-kicker">Crop Cycles & Harvest Yields</p>
+                                        </header>
+                                        <p class="mzaCard-text mzaPar-2">Track coconut and paddy crop cycles, log harvest sales revenue, manage farm expenditures, and monitor net agricultural yield returns.</p>
+                                        <footer class="mzaCard-actions mzaPar-3">
+                                            <a href="agriculture.html" class="mzaBtn">Explore Farm Logs →</a>
+                                        </footer>
+                                    </div>
+                                </article>
+
+                                <!-- Slide 5: Home Household -->
+                                <article class="mzaCarousel-slide" role="group" aria-roledescription="slide" aria-label="5 of 5">
+                                    <div class="mzaCard card-bg-home">
+                                        <header class="mzaCard-head mzaPar-1">
+                                            <h2 class="mzaCard-title">Home & Household</h2>
+                                            <p class="mzaCard-kicker">Family Living Expenses & Savings</p>
+                                        </header>
+                                        <p class="mzaCard-text mzaPar-2">Track monthly groceries, electricity bills, tuition fees, and house maintenance expenses to optimize net family monthly savings.</p>
+                                        <footer class="mzaCard-actions mzaPar-3">
+                                            <a href="home.html" class="mzaBtn">Manage Home →</a>
+                                        </footer>
+                                    </div>
+                                </article>
+
+                            </div>
+                        </div>
+
+                        <!-- CAROUSEL CONTROLS & PAGINATION -->
+                        <div class="mzaCarousel-controls" aria-label="Controls">
+                            <button class="mzaCarousel-prev" aria-label="Previous slide" type="button">‹</button>
+                            <button class="mzaCarousel-next" aria-label="Next slide" type="button">›</button>
+                        </div>
+
+                        <div class="mzaCarousel-pagination" role="tablist" aria-label="Slide navigation"></div>
+                        <div class="mzaCarousel-progress" aria-hidden="true"><span class="mzaCarousel-progressBar"></span></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

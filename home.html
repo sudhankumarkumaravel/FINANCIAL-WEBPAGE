@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Household Expenses, Income & Monthly Family Budget Operations">
+    <title>Home & Household | Enterprise Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body id="homePage">
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                🏢 <span>EnterpriseOS</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Master Command</a></li>
+                <li><a href="petrol-bunk.html">⛽ Petrol Bunk</a></li>
+                <li><a href="shop-rent.html">🏬 Shop Rent</a></li>
+                <li><a href="business.html">💼 Business Ledger</a></li>
+                <li><a href="agriculture.html">🌾 Agriculture</a></li>
+                <li><a href="home.html" class="active">🏡 Home / Family</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-danger btn-block" onclick="performLogout()">
+                    🚪 Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Topbar -->
+            <header class="app-topbar">
+                <div class="topbar-title">
+                    <span>🏡 Home & Household Financial Operations</span>
+                    <span style="font-size: 12px; font-weight: 600; background: var(--status-success-bg); color: var(--status-success); border: 1px solid var(--status-success-border); padding: 4px 14px; border-radius: 20px; margin-left: 12px; display: inline-flex; align-items: center;">
+                        <span class="pulse-beacon"></span>Live Database Connected
+                    </span>
+                </div>
+                <div class="topbar-right">
+                    <div class="date-badge" id="currentDateNav"></div>
+                    <div class="user-badge" id="currentUserDisplay">👤 Admin</div>
+                </div>
+            </header>
+
+            <!-- Workspace Content -->
+            <div class="app-content">
+
+                <!-- KPI METRIC CARDS -->
+                <div class="kpi-grid">
+                    <div class="kpi-card business">
+                        <div class="kpi-title">Monthly Family Income</div>
+                        <div class="kpi-value" id="kpiHomeIncome" style="color: var(--status-success);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiHomeIncomeSub">Monthly Salary & Allocations</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 85%; background: var(--status-success);"></div></div>
+                    </div>
+
+                    <div class="kpi-card agri">
+                        <div class="kpi-title">Monthly Household Expenses</div>
+                        <div class="kpi-value" id="kpiHomeExpenses" style="color: var(--status-danger);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiHomeExpensesCount">0 Living Items Logged</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 65%; background: var(--status-danger);"></div></div>
+                    </div>
+
+                    <div class="kpi-card home">
+                        <div class="kpi-title">Net Household Savings / Surplus</div>
+                        <div class="kpi-value" id="kpiHomeSavings" style="color: var(--mod-home);">₹ 0.00</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiHomeSavingsRate">Surplus Margin: 0%</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" style="width: 80%; background: var(--mod-home);"></div></div>
+                    </div>
+
+                    <div class="kpi-card shop">
+                        <div class="kpi-title">Household Budget Target</div>
+                        <div class="kpi-value" id="kpiHomeBudget" style="color: var(--mod-shop);">₹ 50,000</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="kpiHomeBudgetUsed">0% Used</div>
+                        <div class="kpi-progress-bar"><div class="kpi-progress-fill" id="kpiHomeBudgetMeter" style="width: 40%; background: var(--mod-shop);"></div></div>
+                    </div>
+                </div>
+
+                <!-- HOUSEHOLD ENTRY FORM -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>📝 Record Household Transaction</span>
+                        <span style="font-size: 13px; font-weight: 500; color: #94a3b8;">Income, Groceries, Utilities & Education</span>
+                    </h2>
+
+                    <form id="homeTransactionForm" onsubmit="handleHomeSubmit(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="homeDateInput">Date</label>
+                                <input type="date" id="homeDateInput" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="homeTitleInput">Item Description / Title</label>
+                                <input type="text" id="homeTitleInput" class="form-control" placeholder="e.g. Supermarket Groceries / TNEB Electricity" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="homeCategorySelect">Expense / Income Category</label>
+                                <select id="homeCategorySelect" class="form-control" required>
+                                    <option value="Groceries & Supplies">🛒 Groceries & Supplies</option>
+                                    <option value="Electricity & Utilities">⚡ Electricity & Utilities</option>
+                                    <option value="Rent & Housing EMI">🏠 Rent & Housing EMI</option>
+                                    <option value="Children Education">🎓 Children School & Tuition Fees</option>
+                                    <option value="Medical & Healthcare">🏥 Medical & Healthcare</option>
+                                    <option value="Vehicle & Transport Fuel">⛽ Vehicle & Transport Fuel</option>
+                                    <option value="House Maintenance">🔧 House Maintenance & Repairs</option>
+                                    <option value="Salary & Income">💵 Salary & Personal Income</option>
+                                    <option value="Miscellaneous">📦 Miscellaneous Living Expense</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="homeTypeSelect">Type</label>
+                                <select id="homeTypeSelect" class="form-control" required>
+                                    <option value="EXPENSE">Expense (Outflow)</option>
+                                    <option value="INCOME">Income (Inflow)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="homeAmountInput">Amount (₹)</label>
+                                <input type="number" step="0.01" id="homeAmountInput" class="form-control" placeholder="e.g. 4500" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="homeNotesInput">Notes / Receipt Reference (Optional)</label>
+                            <input type="text" id="homeNotesInput" class="form-control" placeholder="e.g. DMart Bill #8821">
+                        </div>
+
+                        <button type="submit" class="btn btn-accent btn-block">
+                            💾 Save Household Record
+                        </button>
+                    </form>
+                </div>
+
+                <!-- HOUSEHOLD LEDGER TABLE -->
+                <div class="card">
+                    <h2 class="card-header">
+                        <span>📜 Household Financial Ledger</span>
+                        <button class="btn btn-secondary" onclick="loadHomeLedger()">🔄 Refresh Ledger</button>
+                    </h2>
+
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Title / Description</th>
+                                    <th>Category</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Notes</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="homeTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center" style="padding: 24px; color: #94a3b8;">Loading household ledger...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/home.js"></script>
+</body>
+</html>
