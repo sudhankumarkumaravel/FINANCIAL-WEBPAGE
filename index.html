@@ -70,7 +70,7 @@
         </div>
         <div class="login-subtitle">Master Multi-Module Financial Command</div>
 
-        <form id="loginForm" onsubmit="performLogin(event)">
+        <form id="loginForm" onsubmit="performLogin(event)" autocomplete="off">
             <div id="loginError" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--status-danger); padding: 10px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; text-align: center;"></div>
 
             <div class="form-group">
@@ -80,7 +80,7 @@
 
             <div class="form-group" style="margin-bottom: 24px;">
                 <label for="passwordInput">Password</label>
-                <input type="password" id="passwordInput" class="form-control" placeholder="Enter password (sudhan@2008@)" autofocus required>
+                <input type="password" id="passwordInput" class="form-control" placeholder="Enter your password" value="" autofocus required autocomplete="new-password">
             </div>
 
             <button type="submit" class="btn btn-accent btn-block" style="padding: 14px; font-size: 15px;">
@@ -89,8 +89,8 @@
         </form>
 
         <div class="demo-credentials">
-            <strong>👤 User:</strong> <code>sudhankumar</code><br>
-            Enter Password: <code>sudhan@2008@</code>
+            <strong>👤 Account:</strong> <code>sudhankumar</code><br>
+            Please enter your password to sign in.
         </div>
     </div>
 

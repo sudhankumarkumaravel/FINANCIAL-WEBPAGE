@@ -41,10 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
 async function performLogin(event) {
     event.preventDefault();
     const usernameInput = (document.getElementById('usernameInput')?.value || 'sudhankumar').trim();
-    const passwordInput = document.getElementById('passwordInput').value;
+    const passwordInput = document.getElementById('passwordInput')?.value || '';
     const loginError = document.getElementById('loginError');
 
     if (loginError) loginError.style.display = 'none';
+
+    if (!passwordInput) {
+        showLoginError("Please enter your password.");
+        return;
+    }
 
     try {
         const data = await apiFetch('/api/auth/login', {
@@ -57,17 +62,17 @@ async function performLogin(event) {
             localStorage.setItem('enterprise_user', JSON.stringify(data.user));
             window.location.href = 'dashboard.html';
         } else {
-            showLoginError(data.error || "Invalid password");
+            showLoginError(data.error || "Incorrect password. Access denied.");
         }
     } catch (err) {
         console.warn("API Login failed, trying offline auth fallback...", err);
-        // Fallback for static GitHub Pages / offline mode (Username: sudhankumar, Password: sudhan@2008@)
+        // Strict fallback matching: password MUST equal sudhan@2008@
         if (passwordInput === 'sudhan@2008@') {
             localStorage.setItem('enterprise_token', 'offline-token-12345');
             localStorage.setItem('enterprise_user', JSON.stringify({ username: 'sudhankumar', role: 'Administrator' }));
             window.location.href = 'dashboard.html';
         } else {
-            showLoginError("Incorrect password. Enter: sudhan@2008@");
+            showLoginError("Incorrect password. Access denied.");
         }
     }
 }
