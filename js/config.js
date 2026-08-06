@@ -1,9 +1,10 @@
 // ============================================================
-// ENTERPRISE API & BACKEND CONFIGURATION
+// ENTERPRISE API & BACKEND CONFIGURATION (PERFECT PERSISTENCE & MATH)
 // ============================================================
 
-// Base API endpoint for local Node.js + SQLite backend server
-const API_BASE_URL = window.location.origin.includes('http') ? window.location.origin : 'http://localhost:3000';
+// Detect environment: Local Node server vs Static GitHub Pages
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = isLocal ? (window.location.origin.includes('http') ? window.location.origin : 'http://localhost:3000') : '';
 
 // Supabase Cloud Backup Credentials (Optional)
 const SUPABASE_URL = 'https://aafmhnzyfrlkdhgjxlgx.supabase.co';
@@ -19,7 +20,7 @@ if (typeof supabase !== 'undefined') {
     }
 }
 
-// Initial Seed Data for Static / GitHub Pages Deployment
+// Initial Seed Data for Static / Offline / GitHub Pages Deployment
 const DEFAULT_SEED_DATA = {
     '/api/petrol-bunk/slips': [],
     '/api/petrol-bunk/daily-sales': [],
@@ -52,7 +53,8 @@ const DEFAULT_SEED_DATA = {
             activity_details: 'fertilizer',
             record_type: 'EXPENSE',
             qty_units: 0,
-            amount: 13550
+            amount: 13550,
+            notes: 'Field fertilizer treatment'
         },
         {
             id: 'ag-seed-2',
@@ -61,7 +63,8 @@ const DEFAULT_SEED_DATA = {
             activity_details: 'thenamaram pathi',
             record_type: 'EXPENSE',
             qty_units: 0,
-            amount: 6000
+            amount: 6000,
+            notes: 'Irrigation path preparation'
         },
         {
             id: 'ag-seed-3',
@@ -70,7 +73,8 @@ const DEFAULT_SEED_DATA = {
             activity_details: 'tractor',
             record_type: 'EXPENSE',
             qty_units: 0,
-            amount: 13260
+            amount: 13260,
+            notes: 'Field tilling tractor labor'
         }
     ],
     '/api/home/transactions': [
@@ -86,48 +90,37 @@ const DEFAULT_SEED_DATA = {
     ]
 };
 
-// Load or Initialize Persistent Mock Database
-function initMockStorage() {
-    const raw = localStorage.getItem('ENTERPRISE_STATIC_DB_V2');
+// Helper: Get storage object directly from localStorage
+function getStaticStorage() {
+    const raw = localStorage.getItem('ENTERPRISE_STATIC_DB_V3');
     if (!raw) {
-        localStorage.setItem('ENTERPRISE_STATIC_DB_V2', JSON.stringify(DEFAULT_SEED_DATA));
+        localStorage.setItem('ENTERPRISE_STATIC_DB_V3', JSON.stringify(DEFAULT_SEED_DATA));
         return JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
     }
     try {
-        const parsed = JSON.parse(raw);
-        // If agriculture records are empty in old cache, merge default seed records
-        if (!parsed['/api/agriculture/records'] || parsed['/api/agriculture/records'].length === 0) {
-            parsed['/api/agriculture/records'] = DEFAULT_SEED_DATA['/api/agriculture/records'];
-        }
-        if (!parsed['/api/business/transactions'] || parsed['/api/business/transactions'].length === 0) {
-            parsed['/api/business/transactions'] = DEFAULT_SEED_DATA['/api/business/transactions'];
-        }
-        if (!parsed['/api/home/transactions'] || parsed['/api/home/transactions'].length === 0) {
-            parsed['/api/home/transactions'] = DEFAULT_SEED_DATA['/api/home/transactions'];
-        }
-        return parsed;
+        return JSON.parse(raw);
     } catch(e) {
         return JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
     }
 }
 
-const MOCK_STORAGE = initMockStorage();
-
-function persistStaticDb() {
+// Helper: Save storage object directly to localStorage
+function saveStaticStorage(dataObj) {
     try {
-        localStorage.setItem('ENTERPRISE_STATIC_DB_V2', JSON.stringify(MOCK_STORAGE));
+        localStorage.setItem('ENTERPRISE_STATIC_DB_V3', JSON.stringify(dataObj));
     } catch(e) {
-        console.warn("Unable to persist static DB to localStorage", e);
+        console.warn("Unable to save static storage to localStorage", e);
     }
 }
 
-// Helper: Compute dynamic master financial summary from MOCK_STORAGE memory store (Cumulative All-Time)
+// Helper: Compute dynamic master financial summary (Cumulative All-Time)
 function getDynamicMockMonthlySummary() {
     const currentMonthStr = new Date().toISOString().slice(0, 7);
+    const store = getStaticStorage();
 
     // 1. Petrol Bunk
     let petrolRevenue = 0, petrolProfit = 0;
-    (MOCK_STORAGE['/api/petrol-bunk/daily-sales'] || []).forEach(s => {
+    (store['/api/petrol-bunk/daily-sales'] || []).forEach(s => {
         petrolRevenue += (parseFloat(s.total_revenue) || 0);
         petrolProfit += (parseFloat(s.total_profit) || 0);
     });
@@ -135,15 +128,15 @@ function getDynamicMockMonthlySummary() {
 
     // 2. Shop Rent
     let shopRentIncome = 0;
-    (MOCK_STORAGE['/api/shop-rent/payments'] || []).forEach(sp => {
+    (store['/api/shop-rent/payments'] || []).forEach(sp => {
         if (sp.is_paid) {
             shopRentIncome += (parseFloat(sp.amount_paid) || 0);
         }
     });
 
-    // 3. Freight Business
+    // 3. Freight Business (Recognized when company_paid_status === 1)
     let bizRevenue = 0, bizExpenses = 0, bizProfit = 0;
-    (MOCK_STORAGE['/api/business/transactions'] || []).forEach(t => {
+    (store['/api/business/transactions'] || []).forEach(t => {
         if (t.company_paid_status === 1 || t.company_paid_status === true) {
             bizRevenue += (parseFloat(t.company_amount) || 0);
             bizExpenses += (parseFloat(t.supplier_amount) || 0);
@@ -153,7 +146,7 @@ function getDynamicMockMonthlySummary() {
 
     // 4. Agriculture
     let agriRevenue = 0, agriExpenses = 0;
-    (MOCK_STORAGE['/api/agriculture/records'] || []).forEach(r => {
+    (store['/api/agriculture/records'] || []).forEach(r => {
         const amt = parseFloat(r.amount) || 0;
         if (r.record_type === 'INCOME') agriRevenue += amt;
         else agriExpenses += amt;
@@ -162,7 +155,7 @@ function getDynamicMockMonthlySummary() {
 
     // 5. Home Household
     let homeIncome = 0, homeExpenses = 0;
-    (MOCK_STORAGE['/api/home/transactions'] || []).forEach(h => {
+    (store['/api/home/transactions'] || []).forEach(h => {
         const amt = parseFloat(h.amount) || 0;
         if (h.transaction_type === 'INCOME') homeIncome += amt;
         else homeExpenses += amt;
@@ -188,8 +181,15 @@ function getDynamicMockMonthlySummary() {
     };
 }
 
-// Utility: Generic API Request Helper with Fallback
+// Universal API Fetch Function (Handles Local SQLite REST Server & Static Fallback)
 async function apiFetch(endpoint, options = {}) {
+    const cleanEp = endpoint.split('?')[0].replace(/\/$/, '');
+
+    // If running on static host (GitHub Pages) or API_BASE_URL is empty, process directly via LocalStorage
+    if (!API_BASE_URL) {
+        return handleStaticFallback(cleanEp, options);
+    }
+
     const defaultHeaders = { 'Content-Type': 'application/json' };
     const config = {
         ...options,
@@ -203,112 +203,116 @@ async function apiFetch(endpoint, options = {}) {
         }
         return await response.json();
     } catch (err) {
-        console.warn(`API call to ${endpoint} using dynamic fallback data...`, err);
-        const cleanEp = endpoint.split('?')[0].replace(/\/$/, '');
-
-        // STRICT PASSWORD CHECK FOR AUTH LOGIN ENDPOINT
-        if (cleanEp === '/api/auth/login') {
-            let bodyObj = {};
-            try {
-                bodyObj = JSON.parse(options.body || '{}');
-            } catch(e) {}
-
-            if (bodyObj.password === 'sudhan@2008@') {
-                return { success: true, user: { username: 'sudhankumar', role: 'Administrator' }, token: 'enterprise-session-token-xyz' };
-            } else {
-                return { success: false, error: 'Incorrect password. Access denied.' };
-            }
-        }
-
-        if (cleanEp === '/api/dashboard/monthly-summary') {
-            return getDynamicMockMonthlySummary();
-        }
-
-        // POST HANDLER FOR OFFLINE / GITHUB PAGES PERSISTENCE
-        if (options.method === 'POST') {
-            let bodyObj = {};
-            try {
-                bodyObj = JSON.parse(options.body || '{}');
-            } catch(e) {}
-
-            bodyObj.id = bodyObj.id || 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-            
-            // Auto calculate fields for petrol daily sales if needed
-            if (cleanEp === '/api/petrol-bunk/daily-sales') {
-                const pPrice = parseFloat(bodyObj.petrol_price) || 100.75;
-                const dPrice = parseFloat(bodyObj.diesel_price) || 92.34;
-                const pCost = parseFloat(bodyObj.petrol_cost) || (pPrice - 3.50);
-                const dCost = parseFloat(bodyObj.diesel_cost) || (dPrice - 3.20);
-                const pLiters = parseFloat(bodyObj.petrol_liters) || 0;
-                const dLiters = parseFloat(bodyObj.diesel_liters) || 0;
-
-                bodyObj.total_revenue = (pLiters * pPrice) + (dLiters * dPrice);
-                bodyObj.total_profit = (pLiters * (pPrice - pCost)) + (dLiters * (dPrice - dCost));
-            }
-
-            // Auto calculate fields for business transactions
-            if (cleanEp === '/api/business/transactions') {
-                const emptyWeight = parseFloat(bodyObj.empty_weight_tons) || 0;
-                const totalWeight = parseFloat(bodyObj.total_weight_tons) || 0;
-                const netWeight = Math.max(0, totalWeight - emptyWeight);
-                const buyRate = parseFloat(bodyObj.buy_rate_per_ton) || 0;
-                const sellRate = parseFloat(bodyObj.sell_rate_per_ton) || 0;
-
-                bodyObj.net_weight_tons = netWeight;
-                bodyObj.supplier_amount = netWeight * buyRate;
-                bodyObj.company_amount = netWeight * sellRate;
-                bodyObj.net_profit = bodyObj.company_amount - bodyObj.supplier_amount;
-                bodyObj.supplier_paid_status = bodyObj.supplier_paid_status ? 1 : 0;
-                bodyObj.company_paid_status = bodyObj.company_paid_status ? 1 : 0;
-            }
-
-            if (!MOCK_STORAGE[cleanEp]) {
-                MOCK_STORAGE[cleanEp] = [];
-            }
-            MOCK_STORAGE[cleanEp].unshift(bodyObj);
-            persistStaticDb();
-
-            return { success: true, id: bodyObj.id, ...bodyObj };
-        }
-        
-        if (options.method === 'DELETE') {
-            const id = cleanEp.split('/').pop();
-            Object.keys(MOCK_STORAGE).forEach(key => {
-                if (Array.isArray(MOCK_STORAGE[key])) {
-                    MOCK_STORAGE[key] = MOCK_STORAGE[key].filter(item => item.id !== id && item.tenant_id !== id);
-                }
-            });
-            persistStaticDb();
-            return { success: true, id };
-        }
-
-        if (options.method === 'PUT') {
-            const parts = cleanEp.split('/');
-            const id = parts[4] || parts[3];
-            Object.keys(MOCK_STORAGE).forEach(key => {
-                if (Array.isArray(MOCK_STORAGE[key])) {
-                    MOCK_STORAGE[key].forEach(item => {
-                        if (item.id === id) {
-                            if (cleanEp.includes('toggle-paid') || cleanEp.includes('toggle-company-paid')) {
-                                item.is_paid = item.is_paid ? 0 : 1;
-                                item.company_paid_status = item.company_paid_status ? 0 : 1;
-                            }
-                            if (cleanEp.includes('toggle-supplier-paid')) {
-                                item.supplier_paid_status = item.supplier_paid_status ? 0 : 1;
-                            }
-                        }
-                    });
-                }
-            });
-            persistStaticDb();
-            return { success: true, id };
-        }
-
-        if (MOCK_STORAGE[cleanEp]) {
-            return MOCK_STORAGE[cleanEp];
-        }
-        return { success: true };
+        console.warn(`Local API server offline, serving ${endpoint} via LocalStorage fallback...`);
+        return handleStaticFallback(cleanEp, options);
     }
+}
+
+// LocalStorage Fallback Handler
+function handleStaticFallback(cleanEp, options) {
+    const method = (options.method || 'GET').toUpperCase();
+    const store = getStaticStorage();
+
+    // STRICT PASSWORD CHECK FOR AUTH LOGIN
+    if (cleanEp === '/api/auth/login') {
+        let bodyObj = {};
+        try {
+            bodyObj = JSON.parse(options.body || '{}');
+        } catch(e) {}
+
+        if (bodyObj.password === 'sudhan@2008@') {
+            return { success: true, user: { username: 'sudhankumar', role: 'Administrator' }, token: 'enterprise-session-token-xyz' };
+        } else {
+            return { success: false, error: 'Incorrect password. Access denied.' };
+        }
+    }
+
+    if (cleanEp === '/api/dashboard/monthly-summary') {
+        return getDynamicMockMonthlySummary();
+    }
+
+    if (method === 'GET') {
+        return store[cleanEp] || [];
+    }
+
+    if (method === 'POST') {
+        let bodyObj = {};
+        try {
+            bodyObj = JSON.parse(options.body || '{}');
+        } catch(e) {}
+
+        bodyObj.id = bodyObj.id || 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        
+        // Mathematical calculations for Petrol Daily Sales
+        if (cleanEp === '/api/petrol-bunk/daily-sales') {
+            const pPrice = parseFloat(bodyObj.petrol_price) || 100.75;
+            const dPrice = parseFloat(bodyObj.diesel_price) || 92.34;
+            const pCost = parseFloat(bodyObj.petrol_cost) || (pPrice - 3.50);
+            const dCost = parseFloat(bodyObj.diesel_cost) || (dPrice - 3.20);
+            const pLiters = parseFloat(bodyObj.petrol_liters) || 0;
+            const dLiters = parseFloat(bodyObj.diesel_liters) || 0;
+
+            bodyObj.total_revenue = (pLiters * pPrice) + (dLiters * dPrice);
+            bodyObj.total_profit = (pLiters * (pPrice - pCost)) + (dLiters * (dPrice - dCost));
+        }
+
+        // Mathematical calculations for Freight Business
+        if (cleanEp === '/api/business/transactions') {
+            const emptyWeight = parseFloat(bodyObj.empty_weight_tons) || 0;
+            const totalWeight = parseFloat(bodyObj.total_weight_tons) || 0;
+            const netWeight = Math.max(0, totalWeight - emptyWeight);
+            const buyRate = parseFloat(bodyObj.buy_rate_per_ton) || 0;
+            const sellRate = parseFloat(bodyObj.sell_rate_per_ton) || 0;
+
+            bodyObj.net_weight_tons = netWeight;
+            bodyObj.supplier_amount = netWeight * buyRate;
+            bodyObj.company_amount = netWeight * sellRate;
+            bodyObj.net_profit = bodyObj.company_amount - bodyObj.supplier_amount;
+            bodyObj.supplier_paid_status = bodyObj.supplier_paid_status ? 1 : 0;
+            bodyObj.company_paid_status = bodyObj.company_paid_status ? 1 : 0;
+        }
+
+        if (!store[cleanEp]) store[cleanEp] = [];
+        store[cleanEp].unshift(bodyObj);
+        saveStaticStorage(store);
+
+        return { success: true, id: bodyObj.id, ...bodyObj };
+    }
+
+    if (method === 'DELETE') {
+        const id = cleanEp.split('/').pop();
+        Object.keys(store).forEach(key => {
+            if (Array.isArray(store[key])) {
+                store[key] = store[key].filter(item => item.id !== id && item.tenant_id !== id);
+            }
+        });
+        saveStaticStorage(store);
+        return { success: true, id };
+    }
+
+    if (method === 'PUT') {
+        const parts = cleanEp.split('/');
+        const id = parts[4] || parts[3];
+        Object.keys(store).forEach(key => {
+            if (Array.isArray(store[key])) {
+                store[key].forEach(item => {
+                    if (item.id === id) {
+                        if (cleanEp.includes('toggle-paid') || cleanEp.includes('toggle-company-paid')) {
+                            item.is_paid = item.is_paid ? 0 : 1;
+                            item.company_paid_status = item.company_paid_status ? 0 : 1;
+                        }
+                        if (cleanEp.includes('toggle-supplier-paid')) {
+                            item.supplier_paid_status = item.supplier_paid_status ? 0 : 1;
+                        }
+                    }
+                });
+            }
+        });
+        saveStaticStorage(store);
+        return { success: true, id };
+    }
+
+    return { success: true };
 }
 
 // Utility: Number formatting (Indian format)

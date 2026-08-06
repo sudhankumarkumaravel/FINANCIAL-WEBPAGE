@@ -1,5 +1,5 @@
 // ============================================================
-// AGRICULTURE MODULE LOGIC (LIVE BACKEND CONNECTED)
+// AGRICULTURE MODULE LOGIC (PERFECT PERSISTENCE & EXACT MATH)
 // ============================================================
 
 let agriRecords = [];
@@ -18,7 +18,7 @@ function initAgriPage() {
     fetchAgriRecords();
 }
 
-// Fetch Agriculture Records from Live Backend API / Supabase
+// Fetch Agriculture Records
 async function fetchAgriRecords() {
     try {
         const data = await apiFetch('/api/agriculture/records');
@@ -28,24 +28,7 @@ async function fetchAgriRecords() {
             return;
         }
     } catch (err) {
-        console.warn("Backend API call failed, checking Supabase...", err);
-    }
-
-    if (supabaseClient) {
-        try {
-            const { data, error } = await supabaseClient
-                .from('agriculture_records')
-                .select('*')
-                .order('record_date', { ascending: false });
-
-            if (!error && data && data.length > 0) {
-                agriRecords = data;
-                renderAgriDashboard();
-                return;
-            }
-        } catch (sbErr) {
-            console.error("Supabase fetch failed:", sbErr);
-        }
+        console.warn("Backend API call failed, rendering offline logs...", err);
     }
 
     renderAgriDashboard();
@@ -81,8 +64,8 @@ function renderAgriDashboard() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${item.record_date || item.activity_date || '-'}</td>
-            <td><strong>${item.crop_type || item.crop_name}</strong></td>
-            <td>${item.activity_details || item.activity_type}</td>
+            <td><strong>${item.crop_type || item.crop_name || '-'}</strong></td>
+            <td>${item.activity_details || item.activity_type || '-'}</td>
             <td>
                 <span class="pill ${item.record_type === 'INCOME' ? 'pill-income' : 'pill-expense'}">
                     ${item.record_type === 'INCOME' ? '🌾 HARVEST INFLOW' : '🚜 FARM EXPENSE'}
@@ -146,7 +129,8 @@ async function saveAgriRecord(event) {
         activity_details: document.getElementById('agriActivity').value,
         record_type: document.getElementById('agriRecordType').value,
         qty_units: parseFloat(document.getElementById('agriYieldQty').value) || 0,
-        amount: parseFloat(document.getElementById('agriAmount').value) || 0
+        amount: parseFloat(document.getElementById('agriAmount').value) || 0,
+        notes: document.getElementById('agriNotes')?.value || ''
     };
 
     try {
@@ -169,7 +153,7 @@ async function deleteAgriRecord(id) {
     if (!confirm("Are you sure you want to delete this agriculture entry?")) return;
     try {
         await apiFetch(`/api/agriculture/records/${id}`, { method: 'DELETE' });
-        fetchAgriRecords();
+        initAgriPage();
     } catch (e) {
         alert("Failed to delete entry: " + e.message);
     }
