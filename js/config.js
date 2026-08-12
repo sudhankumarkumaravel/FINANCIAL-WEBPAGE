@@ -315,6 +315,110 @@ function handleStaticFallback(cleanEp, options) {
     return { success: true };
 }
 
+// ============================================================
+// CROSS-DEVICE DATA SYNC CONTROLLER
+// ============================================================
+
+function openCloudSyncModal() {
+    let modal = document.getElementById('cloudSyncModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'cloudSyncModal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3>☁️ Cross-Device Data Sync</h3>
+                    <button class="modal-close" onclick="closeCloudSyncModal()">&times;</button>
+                </div>
+                <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5;">
+                    Transfer and sync your financial entries instantly between mobile phones, laptops, and tablets.
+                </div>
+
+                <!-- Export / Copy Section -->
+                <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                    <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">1. Share Data from this Device</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Copy your sync code to send to your friend or your other phone via WhatsApp/SMS.</div>
+                    <button class="btn btn-accent btn-block" onclick="copySyncCode()">📋 Copy 1-Click Sync Code</button>
+                </div>
+
+                <!-- Import Section -->
+                <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: 12px; padding: 16px;">
+                    <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">2. Load / Merge Data on this Device</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Paste the code received from your friend or other device below:</div>
+                    <textarea id="importSyncCodeInput" class="form-control" rows="3" placeholder="Paste 1-Click Sync Code here..." style="font-size: 12px; margin-bottom: 10px; font-family: monospace;"></textarea>
+                    <button class="btn btn-secondary btn-block" onclick="importSyncCode()">📥 Import & Merge Data</button>
+                </div>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-secondary" onclick="closeCloudSyncModal()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+}
+
+function closeCloudSyncModal() {
+    const modal = document.getElementById('cloudSyncModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function copySyncCode() {
+    const store = getStaticStorage();
+    const jsonStr = JSON.stringify(store);
+    const encoded = btoa(encodeURIComponent(jsonStr));
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(encoded).then(() => {
+            alert("✅ 1-Click Sync Code copied to clipboard!\n\nYou can now paste and send this code to your friend via WhatsApp, Email, or SMS.");
+        }).catch(() => {
+            prompt("Copy this 1-Click Sync Code and send it to your friend:", encoded);
+        });
+    } else {
+        prompt("Copy this 1-Click Sync Code and send it to your friend:", encoded);
+    }
+}
+
+function importSyncCode() {
+    const inputEl = document.getElementById('importSyncCodeInput');
+    const rawVal = (inputEl ? inputEl.value : '').trim();
+
+    if (!rawVal) {
+        alert("❌ Please paste a valid 1-Click Sync Code in the box above.");
+        return;
+    }
+
+    try {
+        const decodedJsonStr = decodeURIComponent(atob(rawVal));
+        const importedData = JSON.parse(decodedJsonStr);
+
+        const currentStore = getStaticStorage();
+
+        // Merge records across all endpoints without losing existing entries
+        Object.keys(importedData).forEach(endpoint => {
+            if (Array.isArray(importedData[endpoint])) {
+                if (!currentStore[endpoint]) currentStore[endpoint] = [];
+                
+                importedData[endpoint].forEach(newItem => {
+                    const exists = currentStore[endpoint].some(existing => existing.id === newItem.id);
+                    if (!exists) {
+                        currentStore[endpoint].unshift(newItem);
+                    }
+                });
+            }
+        });
+
+        saveStaticStorage(currentStore);
+        alert("🎉 Data imported successfully! All records from your friend's device are now synchronized on your phone/laptop.");
+        closeCloudSyncModal();
+        window.location.reload();
+    } catch(e) {
+        alert("❌ Invalid Sync Code. Please make sure you copied the entire code string.");
+    }
+}
+
 // Utility: Number formatting (Indian format)
 const formatCurrency = (num) => {
     const val = parseFloat(num) || 0;
