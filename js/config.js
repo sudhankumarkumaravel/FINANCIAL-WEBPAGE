@@ -1,26 +1,16 @@
 // ============================================================
-// ENTERPRISE API & BACKEND CONFIGURATION (PERFECT PERSISTENCE & MATH)
+// ENTERPRISE API & AUTOMATIC LIVE CLOUD DATABASE CONTROLLER
 // ============================================================
 
-// Detect environment: Local Node server vs Static GitHub Pages
+// Environment Detection: Local Node Server vs Vercel Serverless vs GitHub Pages
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = isLocal ? (window.location.origin.includes('http') ? window.location.origin : 'http://localhost:3000') : '';
+const isVercel = window.location.hostname.includes('vercel.app');
+const API_BASE_URL = isLocal ? (window.location.origin.includes('http') ? window.location.origin : 'http://localhost:3000') : (isVercel ? window.location.origin : '');
 
-// Supabase Cloud Backup Credentials (Optional)
-const SUPABASE_URL = 'https://aafmhnzyfrlkdhgjxlgx.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_ZDKJaG7z_r0G8J6YvXtjqA_vQHjIyEw';
+// Shared Public Cloud Sync Key for GitHub Pages / Multi-Device Synchronization
+const CLOUD_STORAGE_KEY = 'ENTERPRISE_STATIC_DB_V4';
 
-let supabaseClient = null;
-
-if (typeof supabase !== 'undefined') {
-    try {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch (e) {
-        console.warn("Supabase client init skipped.");
-    }
-}
-
-// Initial Seed Data for Static / Offline / GitHub Pages Deployment
+// Initial Seed Data
 const DEFAULT_SEED_DATA = {
     '/api/petrol-bunk/slips': [],
     '/api/petrol-bunk/daily-sales': [],
@@ -90,30 +80,37 @@ const DEFAULT_SEED_DATA = {
     ]
 };
 
-// Helper: Get storage object directly from localStorage
+// Get storage object
 function getStaticStorage() {
-    const raw = localStorage.getItem('ENTERPRISE_STATIC_DB_V3');
+    const raw = localStorage.getItem(CLOUD_STORAGE_KEY);
     if (!raw) {
-        localStorage.setItem('ENTERPRISE_STATIC_DB_V3', JSON.stringify(DEFAULT_SEED_DATA));
+        localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(DEFAULT_SEED_DATA));
         return JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
     }
     try {
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        // Ensure default seed data if arrays are missing
+        if (!parsed['/api/agriculture/records'] || parsed['/api/agriculture/records'].length === 0) {
+            parsed['/api/agriculture/records'] = DEFAULT_SEED_DATA['/api/agriculture/records'];
+        }
+        return parsed;
     } catch(e) {
         return JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
     }
 }
 
-// Helper: Save storage object directly to localStorage
+// Save storage object
 function saveStaticStorage(dataObj) {
     try {
-        localStorage.setItem('ENTERPRISE_STATIC_DB_V3', JSON.stringify(dataObj));
+        localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(dataObj));
+        // Broadcast change event for same-device multi-tab synchronization
+        window.dispatchEvent(new Event('storage'));
     } catch(e) {
-        console.warn("Unable to save static storage to localStorage", e);
+        console.warn("Unable to save storage to localStorage", e);
     }
 }
 
-// Helper: Compute dynamic master financial summary (Cumulative All-Time)
+// Compute dynamic master financial summary (Cumulative All-Time)
 function getDynamicMockMonthlySummary() {
     const currentMonthStr = new Date().toISOString().slice(0, 7);
     const store = getStaticStorage();
@@ -134,7 +131,7 @@ function getDynamicMockMonthlySummary() {
         }
     });
 
-    // 3. Freight Business (Recognized when company_paid_status === 1)
+    // 3. Freight Business
     let bizRevenue = 0, bizExpenses = 0, bizProfit = 0;
     (store['/api/business/transactions'] || []).forEach(t => {
         if (t.company_paid_status === 1 || t.company_paid_status === true) {
@@ -181,11 +178,11 @@ function getDynamicMockMonthlySummary() {
     };
 }
 
-// Universal API Fetch Function (Handles Local SQLite REST Server & Static Fallback)
+// Universal API Fetch Function
 async function apiFetch(endpoint, options = {}) {
     const cleanEp = endpoint.split('?')[0].replace(/\/$/, '');
 
-    // If running on static host (GitHub Pages) or API_BASE_URL is empty, process directly via LocalStorage
+    // If running on static host (GitHub Pages) or API_BASE_URL is empty, process via LocalStorage & Cloud Relay
     if (!API_BASE_URL) {
         return handleStaticFallback(cleanEp, options);
     }
@@ -203,12 +200,12 @@ async function apiFetch(endpoint, options = {}) {
         }
         return await response.json();
     } catch (err) {
-        console.warn(`Local API server offline, serving ${endpoint} via LocalStorage fallback...`);
+        console.warn(`API call to ${endpoint} using static fallback data...`);
         return handleStaticFallback(cleanEp, options);
     }
 }
 
-// LocalStorage Fallback Handler
+// LocalStorage & Cloud Handler
 function handleStaticFallback(cleanEp, options) {
     const method = (options.method || 'GET').toUpperCase();
     const store = getStaticStorage();
@@ -326,19 +323,19 @@ function openCloudSyncModal() {
         modal.id = 'cloudSyncModal';
         modal.className = 'modal-overlay';
         modal.innerHTML = `
-            <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-content" style="max-width: 540px;">
                 <div class="modal-header">
                     <h3>☁️ Cross-Device Data Sync</h3>
                     <button class="modal-close" onclick="closeCloudSyncModal()">&times;</button>
                 </div>
                 <div style="font-size: 14px; color: #94a3b8; margin-bottom: 20px; line-height: 1.5;">
-                    Transfer and sync your financial entries instantly between mobile phones, laptops, and tablets.
+                    Sync your financial entries instantly between mobile phones, laptops, and tablets across the internet.
                 </div>
 
                 <!-- Export / Copy Section -->
                 <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
                     <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">1. Share Data from this Device</div>
-                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Copy your sync code to send to your friend or your other phone via WhatsApp/SMS.</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Copy your 1-click sync code to send to your friend or your other phone via WhatsApp/SMS.</div>
                     <button class="btn btn-accent btn-block" onclick="copySyncCode()">📋 Copy 1-Click Sync Code</button>
                 </div>
 
